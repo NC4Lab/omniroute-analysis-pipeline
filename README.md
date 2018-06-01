@@ -1,5 +1,5 @@
 # omniroute_analysis
-Shared code base for Omniroute experiment analysis
+Shared code base for Omniroute experiment data preprocessing and analysis.
 
 ## Environment Setup
 

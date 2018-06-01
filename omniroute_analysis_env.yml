@@ -1,6 +1,7 @@
 name: omniroute_analysis_env
 channels:
   - conda-forge
+  - defaults
 dependencies:
   - python=3.10
   - pip
@@ -8,12 +9,12 @@ dependencies:
   - pandas
   - scipy
   - matplotlib
-  - h5py
-  - networkx
-  - quantities
-  - pynwb
-  - probeinterface
+  - seaborn
+  - openpyxl
+  - xlrd
+  - rosbags
+  - bagpy
+  - python-dotenv
+  - jupyterlab
   - pip:
       - spikeinterface[full]
-      - python-dotenv
-      - rosbags

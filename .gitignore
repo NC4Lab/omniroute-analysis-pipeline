@@ -1,0 +1,57 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Conda environment and pip environment files
+.env
+.env.*
+*.env
+
+# VS Code settings
+.vscode/
+*.code-workspace
+
+# MacOS and system files
+.DS_Store
+Thumbs.db
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Output directories
+output/
+*.log
+*.tmp
+*.bak
+
+# Large data files
+*.dat
+*.npy
+*.pkl
+*.h5
+*.hdf5
+*.rec
+*.bag
+
+# Extracted data folders (optional)
+extracted/
+analyzed/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/

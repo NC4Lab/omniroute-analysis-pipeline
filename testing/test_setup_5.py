@@ -43,15 +43,9 @@ logger.log("SessionMetadata reload and custom fields validated")
 
 # --- Step 3: Create and save EphysMetadata ---
 rec_path = loaded_session.rec_path
-channel_map_path = loaded_session.rat_path / "ephys_channel_map_metadata.csv"
-ephys_save_path = loaded_session.extracted_dir / "ephys_metadata.pkl"
 
 ephys = EphysMetadata()
-ephys.load_extract_data(
-    rec_path=rec_path,
-    channel_map_path=channel_map_path,
-    save_path=ephys_save_path
-)
+ephys.load_extract_data(rat_id, session_name)
 logger.log(f"EphysMetadata initialized: {len(ephys.trodes_id)} channels available")
 logger.log(f"Sampling rate: {ephys.sampling_rate_hz:.2f} Hz")
 
@@ -65,11 +59,7 @@ logger.log("EphysMetadata saved")
 
 # --- Step 4: Reload and validate EphysMetadata ---
 reloaded_ephys = EphysMetadata()
-reloaded_ephys.load_extract_data(
-    rec_path=rec_path,
-    channel_map_path=channel_map_path,
-    save_path=ephys_save_path
-)
+reloaded_ephys.load_extract_data(rat_id, session_name)
 
 # Validate built-in fields
 assert reloaded_ephys.sampling_rate_hz == ephys.sampling_rate_hz

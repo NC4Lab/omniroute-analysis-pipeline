@@ -30,6 +30,7 @@ class SessionMetadata:
         self.rat_path: Path | None = None
         self.rec_path: Path | None = None
         self.extracted_dir: Path | None = None
+        self.pickle_path: Path | None = None
 
         self.session_type: Literal["ephys", "behaviour"] | None = None
 
@@ -47,14 +48,13 @@ class SessionMetadata:
         self.rec_path = get_rec_path(rat_id, session_name)
         self.extracted_dir = self.rat_path / session_name / "extracted"
 
-        pickle_path = self.extracted_dir / "session_metadata.pkl"
+        self.pickle_path = self.extracted_dir / "session_metadata.pkl"
 
-        if pickle_path.exists():
-            with open(pickle_path, "rb") as f:
+        if self.pickle_path.exists():
+            with open(self.pickle_path, "rb") as f:
                 loaded: SessionMetadata = pickle.load(f)
             self.__dict__.update(loaded.__dict__)
 
-            # ✅ Ensure custom field exists
             if not hasattr(self, "custom") or self.custom is None:
                 self.custom = SimpleNamespace()
         else:
@@ -68,8 +68,7 @@ class SessionMetadata:
     def save(self) -> None:
         if not self.extracted_dir:
             raise ValueError("Cannot save without calling load_extract_data first.")
-        out_path = self.extracted_dir / "session_metadata.pkl"
-        with open(out_path, "wb") as f:
+        with open(self.pickle_path, "wb") as f:
             pickle.dump(self, f)
 
 
@@ -80,42 +79,43 @@ class EphysMetadata:
     """
 
     def __init__(self):
-        self.rec_path: Path | None = None
+        self.extracted_dir: Path | None = None
+        self.pickle_path: Path | None = None
         self.channel_map_path: Path | None = None
-        self.save_path: Path | None = None
 
         self.trodes_id: list[int] = []
         self.headstage_hardware_id: list[int] = []
         self.trodes_id_include: list[int] = []
 
         self.sampling_rate_hz: float | None = None
+        self.raw_csc_data: dict[str, Any] = {}
         self.processed_csc_data: dict[str, Any] = {}
         self.timestamp_mapping: dict[str, Any] | None = None
 
         self.custom = None
 
-    def load_extract_data(
-        self, rec_path: Path, channel_map_path: Path, save_path: Path
-    ) -> None:
+    def load_extract_data(self, rat_id: str, session_name: str) -> None:
         """
         Load from disk if a pickle exists; otherwise populate fields from inputs.
         """
-        self.rec_path = rec_path
-        self.channel_map_path = channel_map_path
-        self.save_path = save_path
+        rat_path = get_rat_path(rat_id)
+        rec_path = get_rec_path(rat_id, session_name)
+        self.extracted_dir = rat_path / session_name / "extracted"
 
-        if save_path.exists():
-            with open(save_path, "rb") as f:
+        self.pickle_path = self.extracted_dir / "ephys_metadata.pkl"
+        self.channel_map_path = rat_path / "ephys_channel_map_metadata.csv"
+
+        if self.pickle_path.exists():
+            with open(self.pickle_path, "rb") as f:
                 loaded: EphysMetadata = pickle.load(f)
             self.__dict__.update(loaded.__dict__)
 
-            # ✅ Ensure custom field exists
             if not hasattr(self, "custom") or self.custom is None:
                 self.custom = SimpleNamespace()
         else:
-            self.sampling_rate_hz = load_sample_rate_from_rec(self.rec_path)
-            self._load_channel_map()
+            self.extracted_dir.mkdir(parents=True, exist_ok=True)
             self.custom = SimpleNamespace()
+            self.sampling_rate_hz = load_sample_rate_from_rec(rec_path)
 
     def _load_channel_map(self) -> None:
         if not self.channel_map_path.exists():
@@ -151,9 +151,9 @@ class EphysMetadata:
         setattr(self.custom, key, value)
 
     def save(self) -> None:
-        if not self.save_path:
+        if not self.extracted_dir:
             raise ValueError("Cannot save without calling load_extract_data first.")
-        with open(self.save_path, "wb") as f:
+        with open(self.pickle_path, "wb") as f:
             pickle.dump(self, f)
 
 

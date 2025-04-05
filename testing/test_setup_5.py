@@ -16,8 +16,8 @@ rat_id = "NC40008"
 session_name = "20250328_134136"
 
 # --- Step 1: Create and save SessionMetadata ---
-session = SessionMetadata()
-session.load_extract_data("NC40008", "20250328_134136")
+session = SessionMetadata(rat_id, session_name)
+session.load_or_initialize()
 logger.log("Initialized SessionMetadata")
 
 # Add custom fields before saving
@@ -29,8 +29,8 @@ session.save()
 logger.log("SessionMetadata saved")
 
 # --- Step 2: Reload and validate SessionMetadata ---
-loaded_session = SessionMetadata()
-loaded_session.load_extract_data(rat_id, session_name)
+loaded_session = SessionMetadata(rat_id, session_name)
+loaded_session.load_or_initialize()
 
 # Validate built-in fields
 assert loaded_session.rat_id == rat_id
@@ -42,10 +42,9 @@ assert loaded_session.custom.conditions == ["baseline", "stim"]
 logger.log("SessionMetadata reload and custom fields validated")
 
 # --- Step 3: Create and save EphysMetadata ---
-rec_path = loaded_session.rec_path
 
-ephys = EphysMetadata()
-ephys.load_extract_data(rat_id, session_name)
+ephys = EphysMetadata(rat_id, session_name)
+ephys.load_or_initialize()
 logger.log(f"EphysMetadata initialized: {len(ephys.trodes_id)} channels available")
 logger.log(f"Sampling rate: {ephys.sampling_rate_hz:.2f} Hz")
 
@@ -58,8 +57,8 @@ ephys.save()
 logger.log("EphysMetadata saved")
 
 # --- Step 4: Reload and validate EphysMetadata ---
-reloaded_ephys = EphysMetadata()
-reloaded_ephys.load_extract_data(rat_id, session_name)
+reloaded_ephys = EphysMetadata(rat_id, session_name)
+reloaded_ephys.load_or_initialize()
 
 # Validate built-in fields
 assert reloaded_ephys.sampling_rate_hz == ephys.sampling_rate_hz
@@ -83,7 +82,7 @@ assert ephys.raw_csc_data is not None
 num_channels = ephys.raw_csc_data.get_num_channels()
 num_frames = ephys.raw_csc_data.get_num_frames()
 assert num_channels == len(ephys.trodes_id_include)
-logger.log(f"✅ Loaded CSC data: {num_channels} channels x {num_frames} samples")
+logger.log(f"Loaded CSC data: {num_channels} channels x {num_frames} samples")
 
 # --- Done ---
-logger.log("✅ All tests passed.")
+logger.log("All tests passed.")

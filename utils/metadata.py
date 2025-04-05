@@ -6,124 +6,133 @@ Purpose:
 """
 
 import pickle
-from typing import Any, Literal
-
-import numpy as np
 import pandas as pd
+import numpy as np
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, Literal
+from abc import ABC, abstractmethod
 
-from utils.path import get_rec_path, get_rat_path
 from utils.io_trodes import load_sample_rate_from_rec
+from utils.path import (
+    get_rec_path,
+    get_rat_path,
+    get_ephys_channel_map_path,
+    get_extracted_dir,
+    get_session_metadata_path,
+    get_ephys_metadata_path,
+)
 
 
-class SessionMetadata:
+class BaseMetadata(ABC):
     """
-    Holds session-level context and paths used across the pipeline.
-    Use `load_extract_data(rat_id, session_name)` to populate after init.
+    Shared base class for all metadata types.
+    Handles save/load logic and custom fields.
     """
 
-    def __init__(self):
-        self.rat_id: str = ""
-        self.session_name: str = ""
-
-        self.rat_path: Path | None = None
-        self.rec_path: Path | None = None
-        self.extracted_dir: Path | None = None
-        self.pickle_path: Path | None = None
-
-        self.session_type: Literal["ephys", "behaviour"] | None = None
-
-        self.custom = None
-
-    def load_extract_data(self, rat_id: str, session_name: str) -> None:
-        """
-        Load this SessionMetadata instance from disk if a saved pickle exists.
-        Otherwise, populate its fields based on the session folder structure.
-        """
+    def __init__(self, rat_id: str, session_name: str):
         self.rat_id = rat_id
         self.session_name = session_name
+        self.custom = SimpleNamespace()
 
-        self.rat_path = get_rat_path(rat_id)
-        self.rec_path = get_rec_path(rat_id, session_name)
-        self.extracted_dir = self.rat_path / session_name / "extracted"
-
-        self.pickle_path = self.extracted_dir / "session_metadata.pkl"
-
-        if self.pickle_path.exists():
-            with open(self.pickle_path, "rb") as f:
-                loaded: SessionMetadata = pickle.load(f)
+    def load_or_initialize(self) -> None:
+        """
+        Load from disk if pickle exists, else initialize and call post_initialize().
+        """
+        pickle_path = self._get_pickle_path()
+        if pickle_path.exists():
+            with open(pickle_path, "rb") as f:
+                loaded = pickle.load(f)
             self.__dict__.update(loaded.__dict__)
-
             if not hasattr(self, "custom") or self.custom is None:
                 self.custom = SimpleNamespace()
         else:
-            self.session_type = "ephys" if self.rec_path.exists() else "behaviour"
-            self.extracted_dir.mkdir(parents=True, exist_ok=True)
+            get_extracted_dir(self.rat_id, self.session_name).mkdir(parents=True, exist_ok=True)
             self.custom = SimpleNamespace()
-
-    def set_custom_field(self, key: str, value: Any) -> None:
-        setattr(self.custom, key, value)
+            self.post_initialize()
 
     def save(self) -> None:
-        if not self.extracted_dir:
-            raise ValueError("Cannot save without calling load_extract_data first.")
-        with open(self.pickle_path, "wb") as f:
+        """
+        Save this metadata object to its pickle path.
+        """
+        pickle_path = self._get_pickle_path()
+        with open(pickle_path, "wb") as f:
             pickle.dump(self, f)
 
+    @abstractmethod
+    def post_initialize(self) -> None:
+        """
+        Optional hook to initialize values when creating new metadata object.
+        """
+        pass
 
-class EphysMetadata:
+    @abstractmethod
+    def _get_pickle_path(self) -> Path:
+        """
+        Return the pickle path for this metadata object.
+        """
+        pass
+
+    def set_custom_field(self, key: str, value: Any) -> None:
+        """
+        Add or update a custom metadata field.
+        """
+        setattr(self.custom, key, value)
+
+
+class SessionMetadata(BaseMetadata):
     """
-    Holds electrophysiological channel metadata and maps available vs. active channels.
-    Use `load_extract_data(rec_path, channel_map_path, save_path)` to populate after init.
+    Holds session-level context and identifiers.
     """
 
-    def __init__(self):
+    def __init__(self, rat_id: str, session_name: str):
+        super().__init__(rat_id, session_name)
+        self.rat_path: Path | None = None
+        self.rec_path: Path | None = None
         self.extracted_dir: Path | None = None
-        self.pickle_path: Path | None = None
-        self.channel_map_path: Path | None = None
+        self.session_type: Literal["ephys", "behaviour"] | None = None
 
+    def post_initialize(self) -> None:
+        self.rat_path = get_rat_path(self.rat_id)
+        self.rec_path = get_rec_path(self.rat_id, self.session_name)
+        self.extracted_dir = get_extracted_dir(self.rat_id, self.session_name)
+
+        self.session_type = "ephys" if self.rec_path.exists() else "behaviour"
+
+    def _get_pickle_path(self) -> Path:
+        return get_session_metadata_path(self.rat_id, self.session_name)
+
+
+class EphysMetadata(BaseMetadata):
+    """
+    Holds electrophysiological metadata derived from channel map and .rec file.
+    """
+
+    def __init__(self, rat_id: str, session_name: str):
+        super().__init__(rat_id, session_name)
         self.trodes_id: list[int] = []
         self.headstage_hardware_id: list[int] = []
         self.trodes_id_include: list[int] = []
 
-        self.sampling_rate_hz: float | None = None
         self.raw_csc_data: dict[str, Any] = {}
         self.processed_csc_data: dict[str, Any] = {}
+
+        self.sampling_rate_hz: float | None = None
+
         self.timestamp_mapping: dict[str, Any] | None = None
 
-        self.custom = None
+    def post_initialize(self) -> None:
+        rec_path = get_rec_path(self.rat_id, self.session_name)
+        channel_map_path = get_ephys_channel_map_path(self.rat_id)
 
-    def load_extract_data(self, rat_id: str, session_name: str) -> None:
-        """
-        Load from disk if a pickle exists; otherwise populate fields from inputs.
-        """
-        rat_path = get_rat_path(rat_id)
-        rec_path = get_rec_path(rat_id, session_name)
-        self.extracted_dir = rat_path / session_name / "extracted"
+        self.sampling_rate_hz = load_sample_rate_from_rec(rec_path)
+        self._load_channel_map(channel_map_path)
 
-        self.pickle_path = self.extracted_dir / "ephys_metadata.pkl"
-        self.channel_map_path = rat_path / "ephys_channel_map_metadata.csv"
-
-        if self.pickle_path.exists():
-            with open(self.pickle_path, "rb") as f:
-                loaded: EphysMetadata = pickle.load(f)
-            self.__dict__.update(loaded.__dict__)
-
-            if not hasattr(self, "custom") or self.custom is None:
-                self.custom = SimpleNamespace()
-        else:
-            self.extracted_dir.mkdir(parents=True, exist_ok=True)
-            self.custom = SimpleNamespace()
-            self.sampling_rate_hz = load_sample_rate_from_rec(rec_path)
-
-    def _load_channel_map(self) -> None:
-        if not self.channel_map_path.exists():
-            raise FileNotFoundError(f"Channel map not found: {self.channel_map_path}")
-
-        df = pd.read_csv(self.channel_map_path)
+    def _load_channel_map(self, channel_map_path: Path) -> None:
+        if not channel_map_path.exists():
+            raise FileNotFoundError(f"Channel map not found: {channel_map_path}")
+        df = pd.read_csv(channel_map_path)
         filtered = df[df["exclude"] == False]
-
         self.trodes_id = filtered["trodes_id"].tolist()
         self.headstage_hardware_id = filtered["headstage_hardware_id"].tolist()
         self.trodes_id_include = self.trodes_id.copy()
@@ -131,12 +140,6 @@ class EphysMetadata:
     def trodes_to_headstage_ids(self, ids: list[int]) -> list[str]:
         """
         Convert a list of trodes_id values to headstage_hardware_id strings.
-
-        Parameters:
-            ids (list[int]): Subset of trodes_id to convert.
-
-        Returns:
-            list[str]: Corresponding headstage_hardware_id values as strings.
         """
         mapping = {tid: str(hid) for tid, hid in zip(self.trodes_id, self.headstage_hardware_id)}
         try:
@@ -144,17 +147,5 @@ class EphysMetadata:
         except KeyError as e:
             raise ValueError(f"Invalid trodes_id: {e.args[0]} not found in known mapping.")
 
-    def add_empty_processed_array(self, name: str, csc_dataset: np.ndarray) -> None:
-        self.processed_csc_data[name] = csc_dataset
-
-    def set_custom_field(self, key: str, value: Any) -> None:
-        setattr(self.custom, key, value)
-
-    def save(self) -> None:
-        if not self.extracted_dir:
-            raise ValueError("Cannot save without calling load_extract_data first.")
-        with open(self.pickle_path, "wb") as f:
-            pickle.dump(self, f)
-
-
-
+    def _get_pickle_path(self) -> Path:
+        return get_ephys_metadata_path(self.rat_id, self.session_name)

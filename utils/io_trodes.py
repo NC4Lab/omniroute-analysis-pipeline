@@ -12,7 +12,7 @@ import subprocess
 import spikeinterface.extractors as se
 
 
-from utils.omni_anal_logger import logger
+from utils.omni_anal_logger import omni_anal_logger
 from utils.binary_utils import TrodesDIOBinaryLoader
 from utils.config import TRODES_DIR
 
@@ -36,7 +36,7 @@ def load_csc_from_rec(rec_path: Path, trodes_id_include: list[int]) -> None:
         trodes_id_include (list[int]): List of Trodes channel IDs to include.
         ephys (EphysMetadata): Metadata object to store CSC data in.
     """
-    with logger.time_block("Loading CSC data from .rec file"):
+    with omni_anal_logger.time_block("Loading CSC data from .rec file"):
         rec = se.read_spikegadgets(rec_path)
         return rec.channel_slice(channel_ids=trodes_id_include)
 
@@ -50,10 +50,10 @@ def extract_dio_from_rec(rec_path: Path, dio_dir: Path, overwrite: bool = False)
         overwrite (bool): If True, overwrite existing files. Default is False.
     """
     if dio_dir.exists() and not overwrite:
-        logger.log(f"DIO already extracted at {dio_dir}")
+        omni_anal_logger.info(f"DIO already extracted at {dio_dir}")
         return
     
-    exportdio_exe_path = TRODES_DIR / "exportdio.exe"
+    exportdio_exe_path = Path(TRODES_DIR) / "exportdio.exe"
     cmd = [
         str(exportdio_exe_path),
         "-rec", str(rec_path),
@@ -61,12 +61,12 @@ def extract_dio_from_rec(rec_path: Path, dio_dir: Path, overwrite: bool = False)
         "-output", dio_dir.stem,  # removes .DIO suffix
     ]
 
-    with logger.time_block("Extracting DIO using exportdio"):
+    with omni_anal_logger.time_block("Extracting DIO using exportdio"):
         result = subprocess.run(cmd, capture_output=True, text=True)
 
-    logger.log(f"exportdio stdout:\n{result.stdout}")
+    omni_anal_logger.info(f"exportdio stdout:\n{result.stdout}")
     if result.stderr:
-        logger.log(f"exportdio stderr:\n{result.stderr}")
+        omni_anal_logger.info(f"exportdio stderr:\n{result.stderr}")
 
 def load_dio_binary(dio_dir: Path, channel: int) -> np.ndarray:
     """
@@ -91,5 +91,5 @@ def load_dio_binary(dio_dir: Path, channel: int) -> np.ndarray:
     if matched_file is None:
         raise FileNotFoundError(f"No Din{channel}.dat file found in {dio_dir}")
 
-    with logger.time_block(f"Loading DIO channel {channel}"):
+    with omni_anal_logger.time_block(f"Loading DIO channel {channel}"):
         return TrodesDIOBinaryLoader(matched_file)

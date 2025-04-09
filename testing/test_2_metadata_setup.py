@@ -9,7 +9,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from utils.metadata import SessionMetadata, EphysMetadata
 from utils.io_trodes import load_csc_from_rec
-from utils.omni_anal_logger import logger
+from utils.omni_anal_logger import omni_anal_logger
 
 # --- Test parameters ---
 rat_id = "NC40008"
@@ -18,15 +18,15 @@ session_name = "20250328_134136"
 # --- Step 1: Create and save SessionMetadata ---
 session = SessionMetadata(rat_id, session_name)
 session.load_or_initialize()
-logger.log("Initialized SessionMetadata")
+omni_anal_logger.info("Initialized SessionMetadata")
 
 # Add custom fields before saving
 session.set_custom_field("experimenter", "Ward")
 session.set_custom_field("conditions", ["baseline", "stim"])
-logger.log("Custom fields set in SessionMetadata")
+omni_anal_logger.info("Custom fields set in SessionMetadata")
 
 session.save()
-logger.log("SessionMetadata saved")
+omni_anal_logger.info("SessionMetadata saved")
 
 # --- Step 2: Reload and validate SessionMetadata ---
 loaded_session = SessionMetadata(rat_id, session_name)
@@ -39,22 +39,22 @@ assert loaded_session.session_name == session_name
 # Validate custom fields
 assert loaded_session.custom.experimenter == "Ward"
 assert loaded_session.custom.conditions == ["baseline", "stim"]
-logger.log("SessionMetadata reload and custom fields validated")
+omni_anal_logger.info("SessionMetadata reload and custom fields validated")
 
 # --- Step 3: Create and save EphysMetadata ---
 
 ephys = EphysMetadata(rat_id, session_name)
 ephys.load_or_initialize()
-logger.log(f"EphysMetadata initialized: {len(ephys.trodes_id)} channels available")
-logger.log(f"Sampling rate: {ephys.sampling_rate_hz:.2f} Hz")
+omni_anal_logger.info(f"EphysMetadata initialized: {len(ephys.trodes_id)} channels available")
+omni_anal_logger.info(f"Sampling rate: {ephys.sampling_rate_hz:.2f} Hz")
 
 # Add custom fields before saving
 ephys.set_custom_field("notch_filter_applied", True)
 ephys.set_custom_field("filter_params", {"low": 1, "high": 100})
-logger.log("Custom fields set in EphysMetadata")
+omni_anal_logger.info("Custom fields set in EphysMetadata")
 
 ephys.save()
-logger.log("EphysMetadata saved")
+omni_anal_logger.info("EphysMetadata saved")
 
 # --- Step 4: Reload and validate EphysMetadata ---
 reloaded_ephys = EphysMetadata(rat_id, session_name)
@@ -68,7 +68,7 @@ assert reloaded_ephys.trodes_id_include == ephys.trodes_id_include
 # Validate custom fields
 assert reloaded_ephys.custom.notch_filter_applied is True
 assert reloaded_ephys.custom.filter_params == {"low": 1, "high": 100}
-logger.log("EphysMetadata reload and custom fields validated")
+omni_anal_logger.info("EphysMetadata reload and custom fields validated")
 
 # --- Step 5: Load CSC data and assign directly ---
 hardware_ids = ephys.trodes_to_headstage_ids(ephys.trodes_id_include)
@@ -82,7 +82,7 @@ assert ephys.raw_csc_data is not None
 num_channels = ephys.raw_csc_data.get_num_channels()
 num_frames = ephys.raw_csc_data.get_num_frames()
 assert num_channels == len(ephys.trodes_id_include)
-logger.log(f"Loaded CSC data: {num_channels} channels x {num_frames} samples")
+omni_anal_logger.info(f"Loaded CSC data: {num_channels} channels x {num_frames} samples")
 
 # --- Done ---
-logger.log("All tests passed.")
+omni_anal_logger.info("All tests passed.")

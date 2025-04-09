@@ -28,7 +28,7 @@ The pipeline is built with Python in VS Code and emphasizes:
 - Integration with SpikeInterface — for filtering, waveform extraction, spike sorting, and curation.
 - Use of `.rec` files as the canonical source — avoid unnecessary saving of derived data that can be recomputed.
 - Consistent folder and naming convention for all data exports.
-- Lightweight logging via `utils/logger.py` — used to visualize the structure and timing of operations.
+- Lightweight logging via `utils/omni_anal_logger.py` — used to visualize the structure and timing of operations.
 - Static path resolution — controlled through a `.env` file parsed by `config.py`.
 - Use of metadata objects — `SessionMetadata` and `EphysMetadata` — for managing paths, configuration, and shared state between functions.
 
@@ -47,7 +47,7 @@ Key Design Principles
 - Simplicity is preferred over flexibility — hardcoded structure is fine if it’s clean.
 - Your role is to help write minimal, readable, well-contained functions that follow the architecture I’ve laid out.
 - Minimize unnecessary parameters — assume the environment is correctly configured.
-- Only rely on `SessionMetadata` for path and context propagation — it should be the entry point to everything else.
+- Only rely on `SessionMetadata` for path and context propagation.
 - All session directories follow the conventions in `codebase_folder_structure.txt` and `session_level_folder_structure.txt`.
 
 Reference Documents

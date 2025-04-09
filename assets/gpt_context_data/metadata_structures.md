@@ -91,3 +91,8 @@ The `ephys_channel_map_metadata.csv` file must be located in the top-level rat f
 - `exclude`
 
 CSC data is always read on demand from the original `.rec` file and is never written to disk outside of temporary analysis output.
+
+General Notes About Classes
+========================
+
+These classes should never be used as input arguments to any other funcitons directly. Any data needed from them should be passed as an argument.

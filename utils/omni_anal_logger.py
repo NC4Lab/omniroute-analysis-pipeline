@@ -1,5 +1,5 @@
 """
-Module: logger.py
+Module: omni_anal_logger.py
 
 Purpose:
     Lightweight utility for structured logging with elapsed time tracking and nested operations.
@@ -8,7 +8,7 @@ Purpose:
 import time
 from datetime import datetime
 
-class Logger:
+class OmniAnalLogger:
     def __init__(self):
         self.indent_level = 0
         self.indent_str = "    "
@@ -21,9 +21,9 @@ class Logger:
     def _indent(self) -> str:
         return self.indent_str * self.indent_level
 
-    def log(self, message: str) -> None:
+    def info(self, message: str) -> None:
         """
-        Log a simple message with indentation and timestamp.
+        Log a simple info message with indentation and timestamp.
 
         Parameters:
             message (str): The message to print.
@@ -40,7 +40,7 @@ class Logger:
         Returns:
             float: Start time (use with .end())
         """
-        self.log(f"Starting: {message}")
+        self.info(f"Starting: {message}")
         self.indent_level += 1
         return time.time()
 
@@ -55,7 +55,7 @@ class Logger:
         seconds = int(elapsed)
         milliseconds = int((elapsed - seconds) * 1000)
         self.indent_level = max(0, self.indent_level - 1)
-        self.log(f"Finished in {seconds:02}.{milliseconds:03}s")
+        self.info(f"Finished in {seconds:02}.{milliseconds:03}s")
 
     def time_block(self, message: str):
         """
@@ -65,24 +65,24 @@ class Logger:
             message (str): Description of the block being timed.
 
         Usage:
-            with logger.time_block("Step name"):
+            with omni_anal_logger.time_block("Step name"):
                 do_work()
         """
         return _TimerContext(self, message)
 
 
 class _TimerContext:
-    def __init__(self, logger: Logger, message: str):
-        self.logger = logger
+    def __init__(self, omni_anal_logger: OmniAnalLogger, message: str):
+        self.omni_anal_logger = omni_anal_logger
         self.message = message
         self.start_time = None
 
     def __enter__(self):
-        self.start_time = self.logger.start(self.message)
+        self.start_time = self.omni_anal_logger.start(self.message)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.logger.end(self.start_time)
 
 
 # Instantiate a default global logger for convenience
-logger = Logger()
+omni_anal_logger = OmniAnalLogger()

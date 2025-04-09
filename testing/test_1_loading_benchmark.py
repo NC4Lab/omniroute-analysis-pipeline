@@ -34,7 +34,7 @@ from spikeinterface.preprocessing import bandpass_filter, common_reference, norm
 from spikeinterface.extractors import read_spikegadgets, BinaryRecordingExtractor, NumpyRecording
 from spikeinterface import write_binary_recording
 
-from utils.omni_anal_logger import logger
+from utils.omni_anal_logger import omni_anal_logger
 from utils.metadata import SessionMetadata
 from utils.config import NC4_DATA_DIR
 
@@ -64,7 +64,7 @@ def get_rec_path():
 
 
 def method_from_rec():
-    logger.log("Starting: Method A - Direct from .rec")
+    omni_anal_logger.info("Starting: Method A - Direct from .rec")
     t0 = time.perf_counter()
     recording = read_spikegadgets(get_rec_path())
     recording = recording.channel_slice(channel_ids=recording.channel_ids[:N_CHANNELS])
@@ -81,7 +81,7 @@ def method_from_rec():
     }
 
 def method_interleaved_dat():
-    logger.log("Starting: Method B - Interleaved .dat")
+    omni_anal_logger.info("Starting: Method B - Interleaved .dat")
     dat_path = BENCHMARK_DIR / "interleaved.dat"
 
     # Step 1: Load + Save .rec -> .dat
@@ -123,7 +123,7 @@ def method_interleaved_dat():
     }
 
 def method_split_dats():
-    logger.log("Starting: Method C - Split .dat files")
+    omni_anal_logger.info("Starting: Method C - Split .dat files")
     split_paths = []
 
     # Step 1: Load .rec + Save split .dat

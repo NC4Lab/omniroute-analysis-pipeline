@@ -57,9 +57,7 @@ Fields:
 - `headstage_hardware_id` (`list[int]`): Corresponding SpikeInterface-compatible channel IDs (as integers)
 - `trodes_id_include` (`list[int]`): Dynamic list of trodes IDs selected for use in downstream analysis
 - `sampling_rate_hz` (`float`): Inferred from `.rec` file using SpikeInterface
-- `raw_csc_data` (`SpikeInterface.BaseRecording`): CSC data read from `.rec` using `headstage_hardware_id` mapped from `trodes_id_include`
-- `processed_csc_data` (`dict[str, Any]`): Transient space for derived CSC arrays (e.g., filtered bands). Not saved to disk.
-- `timestamp_mapping` (`dict[str, Any] | None`): Optional
+- `timestamp_mapping` (`dict[str, Any] | None`): Data for getting ROS-based timestamps for SpikeGadgets data
   - `"poly_coeffs"`: list of polynomial coefficients for time conversion
   - `"r_squared"`: fit quality metric
 

@@ -9,8 +9,9 @@ from pathlib import Path
 import os
 import numpy as np
 import subprocess
+from typing import Union
 import spikeinterface.extractors as se
-
+from spikeinterface import BaseRecording
 
 from utils.omni_anal_logger import omni_anal_logger
 from utils.binary_utils import TrodesDIOBinaryLoader
@@ -34,7 +35,10 @@ def load_csc_from_rec(rec_path: Path, trodes_id_include: list[int]) -> None:
     Parameters:
         rec_path (Path): Path to the .rec file.
         trodes_id_include (list[int]): List of Trodes channel IDs to include.
-        ephys (EphysMetadata): Metadata object to store CSC data in.
+
+    Returns:
+        BaseRecording: SpikeInterface recording object with selected channels, ready for downstream processing.
+
     """
     with omni_anal_logger.time_block("Loading CSC data from .rec file"):
         rec = se.read_spikegadgets(rec_path)
@@ -103,3 +107,29 @@ def load_dio_binary(dio_dir: Path, channel: int) -> np.ndarray:
 
     with omni_anal_logger.time_block(f"Loading DIO channel {channel}"):
         return TrodesDIOBinaryLoader(matched_file)
+    
+def get_dio_sg_ts(dio_df: np.ndarray, sampling_rate_hz: float) -> np.ndarray:
+    """
+    Compute SpikeGadgets timebase timestamps for each entry in the DIO trace.
+
+    Parameters:
+        dio_df (np.ndarray): DIO DataFrame with index as sample numbers (from load_dio_binary(...).dio).
+        sampling_rate_hz (float): Sampling rate of the Trodes system in Hz.
+
+    Returns:
+        np.ndarray: Array of timestamps in SpikeGadgets timebase (in seconds).
+    """
+    return dio_df.index.to_numpy() / sampling_rate_hz
+
+def get_csc_sg_ts(n_samples: int, sampling_rate_hz: float) -> np.ndarray:
+    """
+    Compute SpikeGadgets timebase timestamps for each sample in CSC data.
+
+    Parameters:
+        n_samples (int): Number of CSC samples.
+        sampling_rate_hz (float): Sampling rate of the CSC recording in Hz.
+
+    Returns:
+        np.ndarray: Array of timestamps in SpikeGadgets timebase (in seconds).
+    """
+    return np.arange(n_samples) / sampling_rate_hz

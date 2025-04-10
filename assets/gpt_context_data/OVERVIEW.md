@@ -22,15 +22,23 @@ Spike sorting will be handled through SpikeInterface-compatible sorter modules (
 Pipeline and Workflow
 ---------------------
 
-The pipeline is built with Python in VS Code and emphasizes:
+The pipeline is implemented in Python and structured to separate core utilities, user-facing scripts, and session-specific notebooks. It emphasizes:
 
-- Modularity — each function and utility is its own clean unit.
-- Integration with SpikeInterface — for filtering, waveform extraction, spike sorting, and curation.
-- Use of `.rec` files as the canonical source — avoid unnecessary saving of derived data that can be recomputed.
-- Consistent folder and naming convention for all data exports.
-- Lightweight logging via `utils/omni_anal_logger.py` — used to visualize the structure and timing of operations.
-- Static path resolution — controlled through a `.env` file parsed by `config.py`.
-- Use of metadata objects — `SessionMetadata` and `EphysMetadata` — for managing paths, configuration, and shared state between functions.
+- Modularity: All core operations are implemented as minimal, testable functions in the `utils/` directory.
+- Metadata-driven workflows: `SessionMetadata` and `EphysMetadata` objects propagate session-specific paths, parameters, and configuration.
+- Canonical sources: `.rec` files are treated as the authoritative input; derived data is not persisted unless explicitly exported.
+- Robust timestamp alignment: Sync pulses are extracted from `.rec` and `.bag` files, then aligned via polynomial mapping and validated.
+- Logging: Time-stamped, indented logging is handled via `omni_anal_logger`, providing structure and runtime visibility without external dependencies.
+- Config consistency: All global paths (e.g., to SpikeGadgets tools) are loaded from a `.env` file parsed by `config.py`.
+
+### Workflow Execution
+
+- Scripts layer (`scripts/`): Mid-level scripts such as `setup_metadata.py` and `setup_ts_sync.py` provide accessible entry points for initializing sessions and computing sync parameters, without needing to touch internal logic.
+- Analysis notebooks (`experiment/`): Jupyter notebooks perform exploratory and publication-ready analysis using the standardized pipeline.
+- Core utilities (`utils/`): Low-level components for I/O, metadata, sync alignment, CSC extraction, spike sorting, event parsing and analysis.
+
+This structure supports reproducible, modular, and transparent neuroscience analysis, with clear boundaries between reusable components and user workflows.
+
 
 Timestamp Synchronization
 -------------------------
@@ -62,3 +70,8 @@ Useful Links
 ------------
 
 - SpikeInterface repo: [https://github.com/SpikeInterface/spikeinterface?utm_source=chatgpt.com](https://github.com/SpikeInterface/spikeinterface?utm_source=chatgpt.com)
+
+General Notes About Classes
+========================
+
+Utils Input Convention: Utility functions in utils/ modules should not take metadata classes (e.g., SessionMetadata, EphysMetadata) as arguments. Instead, pass only the minimal required values (e.g., sampling_rate_hz, timestamp_mapping, etc.).

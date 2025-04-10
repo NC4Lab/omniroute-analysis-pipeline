@@ -70,19 +70,5 @@ assert reloaded_ephys.custom.notch_filter_applied is True
 assert reloaded_ephys.custom.filter_params == {"low": 1, "high": 100}
 omni_anal_logger.info("EphysMetadata reload and custom fields validated")
 
-# --- Step 5: Load CSC data and assign directly ---
-hardware_ids = ephys.trodes_to_headstage_ids(ephys.trodes_id_include)
-ephys.raw_csc_data = load_csc_from_rec(
-    rec_path=loaded_session.rec_path,
-    trodes_id_include=hardware_ids,  # now correctly mapped and string-typed
-)
-
-# --- Step 6: Validate CSC structure ---
-assert ephys.raw_csc_data is not None
-num_channels = ephys.raw_csc_data.get_num_channels()
-num_frames = ephys.raw_csc_data.get_num_frames()
-assert num_channels == len(ephys.trodes_id_include)
-omni_anal_logger.info(f"Loaded CSC data: {num_channels} channels x {num_frames} samples")
-
 # --- Done ---
 omni_anal_logger.info("All tests passed.")

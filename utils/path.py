@@ -24,6 +24,15 @@ def get_rat_path(rat_id: str) -> Path:
 def get_extracted_dir(rat_id: str, session_name: str) -> Path:
     return get_rat_path(rat_id) / session_name / "extracted"
 
+def get_rosbag_path(rat_id: str, session_name: str) -> Path:
+    ros_dir = get_rat_path(rat_id) / session_name / "raw" / "ROS"
+
+    bag_files = list(ros_dir.glob("*.bag"))
+    if not bag_files:
+        raise FileNotFoundError(f"No .bag file found in: {ros_dir}")
+
+    return bag_files[0]
+
 def get_session_metadata_path(rat_id: str, session_name: str) -> Path:
     return get_extracted_dir(rat_id, session_name) / "session_metadata.pkl"
 

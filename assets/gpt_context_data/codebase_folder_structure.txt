@@ -3,23 +3,24 @@ omniroute_analysis/
 ├── .gitignore
 ├── README.md
 ├── STYLE_GUIDE.md
-├── analysis
-│   ├── ros_events.py
-│   ├── trodes_csc.py
-│   └── trodes_spikes.py
-├── experiment
-│   └── gate_manuscript
-│       ├── analysis.ipynb
-│       └── preprocessing.ipynb
 ├── omniroute_analysis_env.yml
 ├── testing
-│   └── test_setup_1.py
+│   ├── test_setup_1.py
 │   └── test_setup_x.py
-├── utils
+├── experiment
+│   └── gate_manuscript
+│       ├── analysis_1.ipynb
+│       ├── analysis_2.ipynb
+│       ├── ...
+│       └── preprocessing.ipynb
+└── utils
     ├── config.py
     ├── path.py
     ├── metadata.py
+    ├── ts_sync.py
     ├── omni_anal_logger.py
     ├── io_rosbag.py
     ├── io_trodes.py
-    └── ts_sync.py
+    ├── anal_ros_events.py
+    ├── anal_trodes_csc.py
+    └── anal_trodes_spikes.py

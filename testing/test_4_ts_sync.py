@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from utils.omni_anal_logger import omni_anal_logger
-from utils.path import get_rec_path, get_dio_dir
+from utils.path import get_rec_path, get_dio_dir, get_rosbag_path
 from utils.metadata import SessionMetadata, EphysMetadata
 from utils.io_trodes import load_dio_binary
 from utils.ts_sync import compute_ts_sync_parameters, convert_sg_ts_to_ros_time
@@ -32,7 +32,7 @@ ephys.load_or_initialize()
 omni_anal_logger.info("Initialized EphysMetadata")
 
 # --- ROS bag path ---
-rosbag_path = Path(rec_path).parents[1] / "ROS" / "ros_session_20250328_134222.bag"
+rosbag_path = get_rosbag_path(rat_id, session_name)
 
 # --- Compute sync parameters ---
 sync_result = compute_ts_sync_parameters(

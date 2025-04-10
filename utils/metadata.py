@@ -26,20 +26,33 @@ from utils.path import (
     get_spike_dir,
 )
 
+
+# ---------------------------------------------------------------------
+# Base class for all metadata types
+# ---------------------------------------------------------------------
+
 class BaseMetadata(ABC):
     """
-    Shared base class for all metadata types.
-    Handles save/load logic and custom fields.
+    Shared base class for metadata objects.
+
+    Provides:
+    - Serialization/deserialization via pickle
+    - Optional custom fields (stored as SimpleNamespace)
     """
 
     def __init__(self, rat_id: str, session_name: str):
+        """
+        Parameters:
+            rat_id (str): Unique animal identifier (e.g., 'NC40008')
+            session_name (str): Timestamped session name (e.g., '20250328_134136')
+        """
         self.rat_id = rat_id
         self.session_name = session_name
         self.custom = SimpleNamespace()
 
     def load_or_initialize(self) -> None:
         """
-        Load from disk if pickle exists, else initialize and call post_initialize().
+        Load object from pickle if it exists; otherwise call post_initialize().
         """
         pickle_path = self._get_pickle_path()
         if pickle_path.exists():
@@ -54,36 +67,46 @@ class BaseMetadata(ABC):
 
     def save(self) -> None:
         """
-        Save this metadata object to its pickle path.
+        Save this metadata object to disk as a pickle file.
         """
         pickle_path = self._get_pickle_path()
         with open(pickle_path, "wb") as f:
             pickle.dump(self, f)
 
+    def set_custom_field(self, key: str, value: Any) -> None:
+        """
+        Add or update a user-defined custom metadata field.
+
+        Parameters:
+            key (str): Name of the field
+            value (Any): Value to store
+        """
+        setattr(self.custom, key, value)
+
     @abstractmethod
     def post_initialize(self) -> None:
         """
-        Optional hook to initialize values when creating new metadata object.
+        Hook for initializing values when creating a new metadata object.
+        Called only if no pickle file exists.
         """
         pass
 
     @abstractmethod
     def _get_pickle_path(self) -> Path:
         """
-        Return the pickle path for this metadata object.
+        Returns:
+            Path: Where this metadata object should be serialized
         """
         pass
 
-    def set_custom_field(self, key: str, value: Any) -> None:
-        """
-        Add or update a custom metadata field.
-        """
-        setattr(self.custom, key, value)
 
+# ---------------------------------------------------------------------
+# Session-level metadata (e.g., paths, session type)
+# ---------------------------------------------------------------------
 
 class SessionMetadata(BaseMetadata):
     """
-    Holds session-level context and identifiers.
+    Stores session-level metadata and derived paths.
     """
 
     def __init__(self, rat_id: str, session_name: str):
@@ -96,6 +119,9 @@ class SessionMetadata(BaseMetadata):
         self.session_type: Literal["ephys", "behaviour"] | None = None
 
     def post_initialize(self) -> None:
+        """
+        Initialize directory paths and determine session type.
+        """
         self.rat_path = get_rat_path(self.rat_id)
         self.rec_path = get_rec_path(self.rat_id, self.session_name)
         self.extracted_dir = get_extracted_dir(self.rat_id, self.session_name)
@@ -110,25 +136,28 @@ class SessionMetadata(BaseMetadata):
         return get_session_metadata_path(self.rat_id, self.session_name)
 
 
+# ---------------------------------------------------------------------
+# Electrophysiology metadata (e.g., channels, sample rate)
+# ---------------------------------------------------------------------
+
 class EphysMetadata(BaseMetadata):
     """
-    Holds electrophysiological metadata derived from channel map and .rec file.
+    Stores ephys-specific metadata, including channel mappings and sampling rate.
     """
 
     def __init__(self, rat_id: str, session_name: str):
         super().__init__(rat_id, session_name)
-        self.trodes_id: list[int] = []
-        self.headstage_hardware_id: list[int] = []
-        self.trodes_id_include: list[int] = []
 
-        self.raw_csc_data: dict[str, Any] = {}
-        self.processed_csc_data: dict[str, Any] = {}
-
+        self.trodes_id: list[int] = []               # Logical Trodes channel IDs
+        self.headstage_hardware_id: list[int] = []   # Corresponding hardware channel IDs
+        self.trodes_id_include: list[int] = []       # Active analysis mask
         self.sampling_rate_hz: float | None = None
-
         self.timestamp_mapping: dict[str, Any] | None = None
 
     def post_initialize(self) -> None:
+        """
+        Load sampling rate and channel map from disk.
+        """
         rec_path = get_rec_path(self.rat_id, self.session_name)
         channel_map_path = get_ephys_channel_map_path(self.rat_id)
 
@@ -136,17 +165,34 @@ class EphysMetadata(BaseMetadata):
         self._load_channel_map(channel_map_path)
 
     def _load_channel_map(self, channel_map_path: Path) -> None:
+        """
+        Load and filter the per-rat channel map CSV.
+
+        Parameters:
+            channel_map_path (Path): Path to channel map CSV
+        """
         if not channel_map_path.exists():
             raise FileNotFoundError(f"Channel map not found: {channel_map_path}")
+
         df = pd.read_csv(channel_map_path)
         filtered = df[df["exclude"] == False]
+
         self.trodes_id = filtered["trodes_id"].tolist()
         self.headstage_hardware_id = filtered["headstage_hardware_id"].tolist()
         self.trodes_id_include = self.trodes_id.copy()
 
     def trodes_to_headstage_ids(self, ids: list[int]) -> list[str]:
         """
-        Convert a list of trodes_id values to headstage_hardware_id strings.
+        Convert Trodes IDs to hardware channel ID strings.
+
+        Parameters:
+            ids (list[int]): Trodes channel IDs to convert
+
+        Returns:
+            list[str]: Corresponding hardware IDs as strings
+
+        Raises:
+            ValueError: If any ID is not found in the map
         """
         mapping = {tid: str(hid) for tid, hid in zip(self.trodes_id, self.headstage_hardware_id)}
         try:

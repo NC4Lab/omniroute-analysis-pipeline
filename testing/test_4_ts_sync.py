@@ -19,6 +19,8 @@ from utils.io_rosbag import load_ros_sync_ts, print_all_topics, print_unique_str
 # --- Setup ---
 rat_id = "NC40008"
 session_name = "20250328_134136"
+dio_channel = 2
+overwrite = True
 
 rec_path = get_rec_path(rat_id, session_name)
 dio_dir = get_dio_dir(rat_id, session_name)
@@ -37,15 +39,16 @@ rosbag_path = get_rosbag_path(rat_id, session_name)
 # --- Compute sync parameters ---
 sync_result = compute_ts_sync_parameters(
     dio_path=dio_dir,
+    dio_channel=dio_channel,
     sampling_rate_hz=ephys.sampling_rate_hz,
     rosbag_path=rosbag_path
 )
 ephys.timestamp_mapping = sync_result
-ephys.save()
+ephys.save_pickle()
 omni_anal_logger.info(f"Saved sync parameters to EphysMetadata: {sync_result}")
 
 # --- Extract Trodes DIO timestamps (rising edges) ---
-dio_loader = load_dio_binary(dio_dir, channel=2)
+dio_loader = load_dio_binary(dio_dir, channel=dio_channel)
 dio_df = dio_loader.dio
 trodes_ts = dio_df[dio_df["state"] == True].index.to_numpy() / ephys.sampling_rate_hz
 

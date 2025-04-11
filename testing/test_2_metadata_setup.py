@@ -25,7 +25,7 @@ session.set_custom_field("experimenter", "Ward")
 session.set_custom_field("conditions", ["baseline", "stim"])
 omni_anal_logger.info("Custom fields set in SessionMetadata")
 
-session.save()
+session.save_pickle()
 omni_anal_logger.info("SessionMetadata saved")
 
 # --- Step 2: Reload and validate SessionMetadata ---
@@ -53,7 +53,7 @@ ephys.set_custom_field("notch_filter_applied", True)
 ephys.set_custom_field("filter_params", {"low": 1, "high": 100})
 omni_anal_logger.info("Custom fields set in EphysMetadata")
 
-ephys.save()
+ephys.save_pickle()
 omni_anal_logger.info("EphysMetadata saved")
 
 # --- Step 4: Reload and validate EphysMetadata ---

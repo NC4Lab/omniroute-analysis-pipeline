@@ -6,7 +6,10 @@ Purpose:
 """
 
 from pathlib import Path
-from utils.config import NC4_DATA_DIR
+from utils.config import NC4_DATA_DIR, TRODES_DIR
+
+def get_trodes_dir() -> Path:
+    return Path(TRODES_DIR)
 
 def get_rec_path(rat_id: str, session_name: str) -> Path:
     return (

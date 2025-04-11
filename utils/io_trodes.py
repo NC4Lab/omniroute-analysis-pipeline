@@ -14,8 +14,9 @@ import spikeinterface.extractors as se
 from spikeinterface import BaseRecording
 
 from utils.omni_anal_logger import omni_anal_logger
+from utils.versioning import save_version_info
 from utils.binary_utils import TrodesDIOBinaryLoader
-from utils.config import TRODES_DIR
+from utils.path import get_trodes_dir
 
 def load_sample_rate_from_rec(rec_path: Path) -> None:
     """
@@ -53,14 +54,17 @@ def extract_dio_from_rec(rec_path: Path, dio_dir: Path, overwrite: bool = False)
         dio_dir (Path): Destination directory to save DIO files.
         overwrite (bool): If True, overwrite existing files. Default is False.
     """
+    # Check if DIO directory already exists and overwrite is disabled
     if dio_dir.exists() and not overwrite:
-        omni_anal_logger.info(f"DIO already extracted at {dio_dir}")
+        omni_anal_logger.warning(f"DIO already extracted at {dio_dir}")
         return
 
-    exportdio_exe_path = Path(TRODES_DIR) / "exportdio.exe"
+    # Resolve full path to the SpikeGadgets exportdio executable in the Trodes directory
+    exportdio_exe_path = Path(get_trodes_dir()) / "exportdio.exe"
     if not exportdio_exe_path.exists():
         raise FileNotFoundError(f"exportdio.exe not found at {exportdio_exe_path}")
 
+    # Build the exportdio command
     cmd = [
         str(exportdio_exe_path),
         "-rec", str(rec_path),
@@ -68,19 +72,25 @@ def extract_dio_from_rec(rec_path: Path, dio_dir: Path, overwrite: bool = False)
         "-output", dio_dir.stem,  # removes .DIO suffix
     ]
 
+    # Run the exportdio tool as a subprocess
     with omni_anal_logger.time_block("Extracting DIO using exportdio"):
         result = subprocess.run(cmd, capture_output=True, text=True)
 
+    # Log the subprocess output for inspection
     omni_anal_logger.info(f"exportdio stdout:\n{result.stdout}")
     if result.stderr:
-        omni_anal_logger.info(f"exportdio stderr:\n{result.stderr}")
+        omni_anal_logger.warning(f"exportdio stderr:\n{result.stderr}")
 
+    # Raise an error if exportdio failed
     if result.returncode != 0:
         raise RuntimeError(
             f"exportdio.exe failed with return code {result.returncode}.\n"
             f"Command: {' '.join(cmd)}\n"
             f"Stderr:\n{result.stderr}"
         )
+
+    # Save version metadata alongside the extracted DIO files
+    save_version_info(dio_dir)
 
 def load_dio_binary(dio_dir: Path, channel: int) -> np.ndarray:
     """

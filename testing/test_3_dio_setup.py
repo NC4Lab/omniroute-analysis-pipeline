@@ -17,6 +17,8 @@ from utils.metadata import SessionMetadata, EphysMetadata
 # --- Test parameters ---
 rat_id = "NC40008"
 session_name = "20250328_134136"
+overwrite = True
+dio_channel = 2
 
 rec_path = get_rec_path(rat_id, session_name)
 dio_dir = get_dio_dir(rat_id, session_name)
@@ -34,15 +36,15 @@ omni_anal_logger.info("Initialized EphysMetadata")
 extract_dio_from_rec(
     rec_path=rec_path,
     dio_dir=dio_dir,
+    overwrite=overwrite,
 )
 omni_anal_logger.info("DIO extraction complete")
 
 # --- Load a specific DIO channel ---
-channel = 2
-dio_loader = load_dio_binary(dio_dir, channel)
+dio_loader = load_dio_binary(dio_dir, dio_channel)
 dio_df = dio_loader.dio  # this is a pandas DataFrame
 
-omni_anal_logger.info(f"Loaded Din{channel} DIO trace: {dio_df.shape[0]} samples")
+omni_anal_logger.info(f"Loaded Din{dio_channel} DIO trace: {dio_df.shape[0]} samples")
 
 # --- Validate DIO content ---
 assert dio_df["state"].dtype == bool, "DIO trace 'state' column must be boolean"

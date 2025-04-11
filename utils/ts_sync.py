@@ -16,6 +16,7 @@ from utils.omni_anal_logger import omni_anal_logger
 
 def compute_ts_sync_parameters(
     dio_path: Path,
+    dio_channel: int,
     sampling_rate_hz: float,
     rosbag_path: Path
 ) -> dict[str, any]:
@@ -24,6 +25,7 @@ def compute_ts_sync_parameters(
 
     Parameters:
         dio_path (Path): Directory containing .dio files extracted from the .rec file.
+        dio_channel (int): DIO channel to use for sync pulse detection.
         sampling_rate_hz (float): Sampling rate of the Trodes recording in Hz.
         rosbag_path (Path): Path to the ROS .bag file containing sync topic.
 
@@ -33,10 +35,10 @@ def compute_ts_sync_parameters(
             "r_squared": float indicating fit quality
         }
     """
-    # Load DIO sync pulses from Trodes (channel 2 hardcoded)
-    dio_df = load_dio_binary(dio_path, channel=2).dio
+    # Load DIO sync pulses from Trodes (based on specified channel)
+    dio_df = load_dio_binary(dio_path, channel=dio_channel).dio
     trodes_ts = dio_df[dio_df["state"] == True].index.to_numpy() / sampling_rate_hz
-    omni_anal_logger.info(f"Found {len(trodes_ts)} Trodes sync pulses")
+    omni_anal_logger.info(f"Found {len(trodes_ts)} Trodes sync pulses from Din{dio_channel}")
 
     # Load sync pulses from ROS bag
     ros_ts = load_ros_sync_ts(rosbag_path)

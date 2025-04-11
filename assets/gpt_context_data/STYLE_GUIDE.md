@@ -46,20 +46,20 @@ Use inline comments **only when necessary** to explain non-obvious logic. Priori
 ### Example
 
 ```python
-# Load CSC data from .rec and keep only active channels ---
+# Load CSC data from .rec and keep only active channels
 rec = load_continuous_from_rec(rec_path)
 rec = rec.channel_slice(channel_ids=active_channels)  # Remove unused or empty channels
 
-# Export to .dat + .json for future SI-compatible reuse ---
+# Export to .dat + .json for future SI-compatible reuse
 export_csc_to_binary(rec, out_dir)
 
-# Bandpass filter the CSC data in parallel ---
+# Bandpass filter the CSC data in parallel
 filtered = bandpass_filter(
     rec, freq_min=1, freq_max=100,
     n_jobs=4  # Use 4 parallel workers
 )
 
-# Extract theta band and save ---
+# Extract theta band and save
 theta = bandpass_filter(filtered, freq_min=6, freq_max=10)
 np.save(out_dir / "theta_filtered.npy", theta.get_traces())  # Save raw theta traces
 ```

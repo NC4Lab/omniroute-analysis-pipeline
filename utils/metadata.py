@@ -14,6 +14,8 @@ from typing import Any, Literal
 from abc import ABC, abstractmethod
 
 from utils import config as _config
+from utils.omni_anal_logger import omni_anal_logger
+from utils.versioning import get_version_info
 from utils.io_trodes import load_sample_rate_from_rec
 from utils.path import (
     get_rec_path,
@@ -27,9 +29,9 @@ from utils.path import (
 )
 
 
-# ---------------------------------------------------------------------
+#------------------------------------------------------------------
 # Base class for all metadata types
-# ---------------------------------------------------------------------
+#------------------------------------------------------------------
 
 class BaseMetadata(ABC):
     """
@@ -38,6 +40,7 @@ class BaseMetadata(ABC):
     Provides:
     - Serialization/deserialization via pickle
     - Optional custom fields (stored as SimpleNamespace)
+    - Automatically tags all metadata with version_info
     """
 
     def __init__(self, rat_id: str, session_name: str):
@@ -49,27 +52,46 @@ class BaseMetadata(ABC):
         self.rat_id = rat_id
         self.session_name = session_name
         self.custom = SimpleNamespace()
+        self.version_info: dict[str, str] = {}
 
     def load_or_initialize(self) -> None:
         """
         Load object from pickle if it exists; otherwise call post_initialize().
+        Also attaches version metadata (git hash and processing timestamp).
         """
         pickle_path = self._get_pickle_path()
+
+        # Load from disk if pickle exists
         if pickle_path.exists():
             with open(pickle_path, "rb") as f:
                 loaded = pickle.load(f)
             self.__dict__.update(loaded.__dict__)
+
+            # Ensure custom and version fields are present
             if not hasattr(self, "custom") or self.custom is None:
                 self.custom = SimpleNamespace()
+            if not hasattr(self, "version_info") or self.version_info is None:
+                self.version_info = get_version_info()
+
+        # Initialize from scratch if no file exists
         else:
             self.custom = SimpleNamespace()
+            self.version_info = get_version_info()
             self.post_initialize()
 
-    def save(self) -> None:
+    def save_pickle(self, overwrite: bool = False) -> None:
         """
         Save this metadata object to disk as a pickle file.
+
+        Parameters:
+            overwrite (bool): If True, overwrite existing file. Default is False.
         """
         pickle_path = self._get_pickle_path()
+
+        if pickle_path.exists() and not overwrite:
+            omni_anal_logger.warning(f"Pickle already exists at {pickle_path} — skipping save.")
+            return
+
         with open(pickle_path, "wb") as f:
             pickle.dump(self, f)
 
@@ -100,9 +122,9 @@ class BaseMetadata(ABC):
         pass
 
 
-# ---------------------------------------------------------------------
+#------------------------------------------------------------------
 # Session-level metadata (e.g., paths, session type)
-# ---------------------------------------------------------------------
+#------------------------------------------------------------------
 
 class SessionMetadata(BaseMetadata):
     """
@@ -127,7 +149,6 @@ class SessionMetadata(BaseMetadata):
         self.extracted_dir = get_extracted_dir(self.rat_id, self.session_name)
         self.dio_dir = get_dio_dir(self.rat_id, self.session_name)
         self.spike_dir = get_spike_dir(self.rat_id, self.session_name)
-
         self.session_type = "ephys" if self.rec_path.exists() else "behaviour"
 
         self.extracted_dir.mkdir(parents=True, exist_ok=True)
@@ -136,9 +157,9 @@ class SessionMetadata(BaseMetadata):
         return get_session_metadata_path(self.rat_id, self.session_name)
 
 
-# ---------------------------------------------------------------------
+#------------------------------------------------------------------
 # Electrophysiology metadata (e.g., channels, sample rate)
-# ---------------------------------------------------------------------
+#------------------------------------------------------------------
 
 class EphysMetadata(BaseMetadata):
     """

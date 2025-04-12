@@ -17,7 +17,7 @@ session_name = "20250328_134136"
 
 # --- Step 1: Create and save SessionMetadata ---
 session = SessionMetadata(rat_id, session_name)
-session.load_or_initialize()
+session.load_or_initialize_pickle()
 omni_anal_logger.info("Initialized SessionMetadata")
 
 # Add custom fields before saving
@@ -30,7 +30,7 @@ omni_anal_logger.info("SessionMetadata saved")
 
 # --- Step 2: Reload and validate SessionMetadata ---
 loaded_session = SessionMetadata(rat_id, session_name)
-loaded_session.load_or_initialize()
+loaded_session.load_or_initialize_pickle()
 
 # Validate built-in fields
 assert loaded_session.rat_id == rat_id
@@ -44,8 +44,8 @@ omni_anal_logger.info("SessionMetadata reload and custom fields validated")
 # --- Step 3: Create and save EphysMetadata ---
 
 ephys = EphysMetadata(rat_id, session_name)
-ephys.load_or_initialize()
-omni_anal_logger.info(f"EphysMetadata initialized: {len(ephys.trodes_id)} channels available")
+ephys.load_or_initialize_pickle()
+omni_anal_logger.info(f"EphysMetadata initialized: {len(ephys.channel_trodes_id)} channels available")
 omni_anal_logger.info(f"Sampling rate: {ephys.sampling_rate_hz:.2f} Hz")
 
 # Add custom fields before saving
@@ -58,12 +58,12 @@ omni_anal_logger.info("EphysMetadata saved")
 
 # --- Step 4: Reload and validate EphysMetadata ---
 reloaded_ephys = EphysMetadata(rat_id, session_name)
-reloaded_ephys.load_or_initialize()
+reloaded_ephys.load_or_initialize_pickle()
 
 # Validate built-in fields
 assert reloaded_ephys.sampling_rate_hz == ephys.sampling_rate_hz
-assert reloaded_ephys.trodes_id == ephys.trodes_id
-assert reloaded_ephys.trodes_id_include == ephys.trodes_id_include
+assert reloaded_ephys.channel_trodes_id == ephys.channel_trodes_id
+assert reloaded_ephys.channel_trodes_id_include == ephys.channel_trodes_id_include
 
 # Validate custom fields
 assert reloaded_ephys.custom.notch_filter_applied is True

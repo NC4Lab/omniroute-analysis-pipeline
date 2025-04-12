@@ -1,29 +1,31 @@
-experiment_x/                            # Top-level project directory
-└── NC40008/                             # Rat-level folder (unique animal ID)
-    ├── ephys_channel_map_metadata.csv   # Per-rat editable metadata table (channel-level)
-    ├── 20250328_134136/                 # Individual session folder (YYMMDD_HHMMSS format)
+experiment_x/                                               # Top-level project directory
+└── NC40001/                                                # Rat-level folder (unique animal ID)
+    ├── ephys_channel_map_metadata.csv                      # Per-rat editable metadata table (channel-level) used by 
+    ├── 20250328_134136/                                    # Individual session folder (YYMMDD_HHMMSS format)
     │   ├── raw/
     │   │   └── Trodes/
-    │   │       └── 20250328_134136_merged.rec     # Original SpikeGadgets .rec file
+    │   │       └── 20250328_134136_merged.rec              # Original SpikeGadgets .rec file
     │   │
     │   ├── ROS/
-    │   │   └── ros_session_20250328_134222.bag    # Original ROS .bag file [may not follow consistant naming conventions]
+    │   │   └── ros_session_20250328_134222.bag             # Original ROS .bag file [may not follow consistant naming conventions]
     │   │
-    │   └── extracted/                 # Preprocessed and derived data for this session
-    │       ├── session_metadata.pkl      # Serialized metadata object for the session-related data
-    │       ├── ephys_metadata.pkl        # Serialized metadata object for the elecrophysiology-related data
+    │   └── processed/                                      # Preprocessed and derived data for this session
+    │       ├── session_metadata.pkl                        # Serialized metadata object for the session-related data
+    │       ├── ephys_metadata.pkl                          # Serialized metadata object for the elecrophysiology-related data
     │
-    │       ├── 20250328_134136.DIO/                      # Digital input event channels (e.g., sync) [may not use this]
+    │       ├── 20250328_134136.DIO/                        # Digital input event channels (e.g., sync)
     │       │   ├── 20250328_134136.dio_Controller_Din1.dat
     │       │   ├── 20250328_134136.dio_Controller_Din2.dat
+    │       │   ├── version_info.pkl                        # Version info from when these were made (git hash and processing date)
     │       │   └── ...
     │
-    │       ├── 20250328_134136.spikes/                   # Sorted spike data (per unit or cluster)
+    │       ├── 20250328_134136.spikes/                     # Sorted spike data (per unit or cluster)
     │       │   ├── 20250328_134136.spikes_unit1.dat
     │       │   ├── 20250328_134136.spikes_unit2.dat
+    │       │   ├── version_info.pkl                        # Version info from when these were made (git hash and processing date)
     │       │   └── ...
     │
-    │       └── ...                       # Additional derived arrays, timestamps, sync files
+    │       └── ...                                         # Additional derived arrays, timestamps, sync files
     │
-    └── ...                               # Other session folders for this rat
-└── ...                                   # Other rat folders (e.g., NC40009, NC40010, etc.)
+    └── ...                                                 # Other session folders for this rat
+└── ...                                                     # Other rat folders (e.g., NC40009, NC40010, etc.)

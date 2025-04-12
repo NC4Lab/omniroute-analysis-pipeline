@@ -25,11 +25,11 @@ dio_dir = get_dio_dir(rat_id, session_name)
 
 # --- Setup metadata objects ---
 session = SessionMetadata(rat_id, session_name)
-session.load_or_initialize()
+session.load_or_initialize_pickle()
 omni_anal_logger.info("Initialized SessionMetadata")
 
 ephys = EphysMetadata(rat_id, session_name)
-ephys.load_or_initialize()
+ephys.load_or_initialize_pickle()
 omni_anal_logger.info("Initialized EphysMetadata")
 
 # --- Run DIO extraction ---

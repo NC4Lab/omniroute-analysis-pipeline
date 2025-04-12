@@ -14,6 +14,7 @@ from utils.io_trodes import load_dio_binary
 from utils.io_rosbag import load_ros_sync_ts
 from utils.omni_anal_logger import omni_anal_logger
 
+
 def compute_ts_sync_parameters(
     dio_path: Path,
     dio_channel: int,
@@ -73,6 +74,7 @@ def compute_ts_sync_parameters(
         "poly_coeffs": p.tolist(),
         "r_squared": float(r_squared)
     }
+
 
 def _validate_sync_alignment(
     trodes_ts: np.ndarray,
@@ -140,6 +142,7 @@ def _validate_sync_alignment(
             f"Sync validation failed: high-state DIO hit fraction = {high_hit_fraction:.3f} (must be > 0.9)"
         )
 
+
 def convert_sg_ts_to_ros_time(
     sg_ts: np.ndarray,
     sync_mapping: dict[str, any]
@@ -162,6 +165,7 @@ def convert_sg_ts_to_ros_time(
 
     omni_anal_logger.info(f"Converted {len(sg_ts)} SG timestamps to ROS timebase")
     return ros_ts
+
 
 def align_timestamps_nw(x, y, new, match=1, mismatch=1, gap=1, thresh=0.1):
     """

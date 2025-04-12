@@ -26,11 +26,11 @@ rec_path = get_rec_path(rat_id, session_name)
 dio_dir = get_dio_dir(rat_id, session_name)
 
 session = SessionMetadata(rat_id, session_name)
-session.load_or_initialize()
+session.load_or_initialize_pickle()
 omni_anal_logger.info("Initialized SessionMetadata")
 
 ephys = EphysMetadata(rat_id, session_name)
-ephys.load_or_initialize()
+ephys.load_or_initialize_pickle()
 omni_anal_logger.info("Initialized EphysMetadata")
 
 # --- ROS bag path ---

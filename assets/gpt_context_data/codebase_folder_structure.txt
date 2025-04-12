@@ -1,31 +1,31 @@
 omniroute_analysis/
-├── .env                            # Environment variables (e.g., TRODES_DIR, NC4_DATA_DIR)
-├── .gitignore                      # Ignore virtual envs, temp files, and data
-├── README.md                       # Project overview and usage instructions
-├── STYLE_GUIDE.md                 # Internal code style and commenting conventions
-├── omniroute_analysis_env.yml      # Conda environment spec for reproducibility
+├── .env                                # Environment variables (e.g., TRODES_DIR, NC4_DATA_DIR)
+├── .gitignore                          # Ignore virtual envs, temp files, and data
+├── README.md                           # Project overview and usage instructions
+├── STYLE_GUIDE.md                      # Internal code style and commenting conventions
+├── omniroute_analysis_env.yml          # Conda environment spec for reproducibility
 ├── pipeline/
-│   └── preprocess_session_start.py   # Orchestration functions for session setup
+│   └── preprocess_session_start.py     # Orchestration functions for session setup (e.g., mettadata creation, timestamp sync)
 ├── testing/
-│   ├── test_setup_1.py              # Manual test: metadata setup + validation
-│   └── test_setup_x.py              # Manual test: DIO extraction + timestamp sync
+│   ├── test_setup_1.py                 # Manual test 1
+│   └── test_setup_x.py                 # Manual test 2 (and so on)
 ├── experiment/
-│   └── my_experiment/               # A single experiment or manuscript workspace
-│       ├── include_sessions.csv     # Explicit list of (rat_id, session_name) pairs to process
+│   └── example_experiment/             # A single experiment or manuscript workspace (this one will be used as an example for others)
+│       ├── experiment_metadata.csv     # CSV file for batch proccsing with (rat_id, session_name, inlucde) used by ExperimentMetadata class
 │       ├── scripts/
-│       │   ├── preprocess_all.py    # Batch process all listed sessions
-│       │   └── preprocess_one.py    # CLI script to process a single session via arguments
+│       │   └── preprocess_batch.py     # Script to batch process sessions
+│       │   └── preprocess_session.py   # (Planned) Script to process single session
 │       └── notebooks/
-│           └── preprocessing.ipynb  # Notebook walkthrough for running preprocessing manuall
+│           └── analysis_1.ipynb        # (Planned) Notebook for high level analyss
 └── utils/
-    ├── config.py                   # Loads `.env` vars like NC4_DATA_DIR and TRODES_DIR
-    ├── path.py                     # Standardized path resolvers for all sessions/files
-    ├── versioning.py               # Tracks git hash and processing date
-    ├── metadata.py                 # SessionMetadata and EphysMetadata classes
-    ├── ts_sync.py                  # Timestamp alignment between .rec and .bag using DIO
-    ├── omni_anal_logger.py         # Custom time-stamped, nested logger
-    ├── io_rosbag.py                # Sync timestamp extraction and topic inspection from .bag
-    ├── io_trodes.py                # Load CSC, extract DIO, get sample timestamps from .rec
-    ├── anal_ros_events.py          # (Planned/Optional) Functions to analyze ROS event topics
-    ├── anal_trodes_csc.py          # (Planned) LFP/CSC analysis utilities
-    ├── anal_trodes_spikes.py       # (Planned) Spike sorting utilities and wrappers
+    ├── config.py                       # Loads `.env` vars like NC4_DATA_DIR and TRODES_DIR
+    ├── path.py                         # Standardized path resolvers for all files and dirs needed in the project
+    ├── versioning.py                   # Tracks git hash and processing date
+    ├── metadata.py                     # SessionMetadata, EphysMetadata and ExperimentMetadata classes
+    ├── ts_sync.py                      # Timestamp alignment between .rec and .bag using DIO
+    ├── omni_anal_logger.py             # Custom time-stamped, nested logger
+    ├── io_rosbag.py                    # Sync timestamp extraction and topic inspection from .bag
+    ├── io_trodes.py                    # Load CSC, extract DIO, get sample timestamps from .rec
+    ├── anal_ros_events.py              # (Planned) Functions to analyze ROS event topics
+    ├── anal_trodes_csc.py              # (Planned) LFP/CSC analysis utilities
+    ├── anal_trodes_spikes.py           # (Planned) Spike sorting utilities and wrappers

@@ -18,6 +18,7 @@ from utils.versioning import save_version_info
 from utils.binary_utils import TrodesDIOBinaryLoader
 from utils.path import get_trodes_dir
 
+
 def load_sample_rate_from_rec(rec_path: Path) -> None:
     """
     Load sampling rate from the .rec file and store it in the EphysMetadata.
@@ -44,6 +45,7 @@ def load_csc_from_rec(rec_path: Path, trodes_id_include: list[int]) -> None:
     with omni_anal_logger.time_block("Loading CSC data from .rec file"):
         rec = se.read_spikegadgets(rec_path)
         return rec.channel_slice(channel_ids=trodes_id_include)
+
 
 def extract_dio_from_rec(rec_path: Path, dio_dir: Path, overwrite: bool = False) -> None:
     """
@@ -92,6 +94,7 @@ def extract_dio_from_rec(rec_path: Path, dio_dir: Path, overwrite: bool = False)
     # Save version metadata alongside the extracted DIO files
     save_version_info(dio_dir)
 
+
 def load_dio_binary(dio_dir: Path, channel: int) -> np.ndarray:
     """
     Load a binary DIO trace from a specific channel using TrodesDIOBinaryLoader.
@@ -117,7 +120,8 @@ def load_dio_binary(dio_dir: Path, channel: int) -> np.ndarray:
 
     with omni_anal_logger.time_block(f"Loading DIO channel {channel}"):
         return TrodesDIOBinaryLoader(matched_file)
-    
+
+
 def get_dio_sg_ts(dio_df: np.ndarray, sampling_rate_hz: float) -> np.ndarray:
     """
     Compute SpikeGadgets timebase timestamps for each entry in the DIO trace.
@@ -130,6 +134,7 @@ def get_dio_sg_ts(dio_df: np.ndarray, sampling_rate_hz: float) -> np.ndarray:
         np.ndarray: Array of timestamps in SpikeGadgets timebase (in seconds).
     """
     return dio_df.index.to_numpy() / sampling_rate_hz
+
 
 def get_csc_sg_ts(n_samples: int, sampling_rate_hz: float) -> np.ndarray:
     """

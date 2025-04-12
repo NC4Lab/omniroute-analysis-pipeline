@@ -46,6 +46,7 @@ def load_ros_sync_ts(bag_path: Path) -> np.ndarray:
 
     return np.array(ros_sync_ts)
 
+
 def print_all_topics(bag_path: Path) -> None:
     """
     Print all topics available in the given ROS2 .bag file.

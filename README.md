@@ -26,7 +26,7 @@ NC4_DATA_DIR=
 
 For example (using double backslashes on Windows paths):
 ```
-TRODES_DIR=C:\\Users\\lester\\MeDocuments\\Research\\MadhavLab\\Projects\\SpikeGadgets\\Trodes_2-3-4_Windows64\\Trodes.exe
+TRODES_DIR=C:\\Users\\lester\\MeDocuments\\Research\\MadhavLab\\Projects\\SpikeGadgets\\Trodes_2-3-4_Windows64
 NC4_DATA_DIR=C:\\Users\\lester\\UBC\\Madhav, Manu - lesterkaur2024gate\\analysis\\gate_ephys_test\\data
 ```
 

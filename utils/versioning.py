@@ -13,6 +13,7 @@ from pathlib import Path
 
 from utils.omni_anal_logger import omni_anal_logger
 
+
 def get_git_hash() -> str:
     """
     Get the current git commit hash of the codebase.
@@ -25,6 +26,7 @@ def get_git_hash() -> str:
     except Exception:
         return "unknown"
 
+
 def get_processed_timestamp() -> str:
     """
     Get the current timestamp in session-style format (e.g., '20250328_134136').
@@ -33,6 +35,7 @@ def get_processed_timestamp() -> str:
         str: Timestamp formatted as 'YYYYMMDD_HHMMSS'.
     """
     return datetime.now().strftime("%Y%m%d_%H%M%S")
+
 
 def get_version_info() -> dict:
     """
@@ -45,6 +48,7 @@ def get_version_info() -> dict:
         "git_hash": get_git_hash(),
         "processed_timestamp": get_processed_timestamp(),
     }
+
 
 def save_version_info(output_dir: Path, filename: str = "version_info.pkl") -> None:
     """
@@ -59,6 +63,7 @@ def save_version_info(output_dir: Path, filename: str = "version_info.pkl") -> N
     with open(out_path, "wb") as f:
         pickle.dump(version_info, f)
 
+
 def load_version_info(path: Path) -> dict:
     """
     Load version metadata from a pickle file.
@@ -71,6 +76,7 @@ def load_version_info(path: Path) -> dict:
     """
     with open(path, "rb") as f:
         return pickle.load(f)
+
 
 def print_version_info(version_info: dict) -> None:
     """

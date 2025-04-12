@@ -48,7 +48,7 @@ output/
 *.bag
 
 # Extracted data folders (optional)
-extracted/
+processed/
 analyzed/
 
 # Build artifacts

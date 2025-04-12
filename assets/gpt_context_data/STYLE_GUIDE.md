@@ -72,3 +72,8 @@ Use consistent formatting to make script structure easy to scan and reason about
 - Use `snake_case` for variables and function names
 - Use `UPPER_CASE` for constants
 - Use `CamelCase` for class names
+
+## Logging
+
+Use `omni_anal_logger` for all internal logs. Prefer `info()` for major steps, `start()` / `end()` for timed blocks, and `warning()` only when user action may be needed.
+

@@ -38,7 +38,7 @@ from utils.omni_anal_logger import omni_anal_logger
 from utils.metadata import SessionMetadata
 from utils.config import NC4_DATA_DIR
 
-RAT_ID = "NC40008"
+RAT_ID = "NC40001"
 SESSION_NAME = "20250328_134136"
 N_CHANNELS = 0
 DURATION_SECONDS = 0

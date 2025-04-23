@@ -14,8 +14,8 @@ from utils.path import (
     get_dio_dir,
     get_rosbag_path,
 )
-from utils.io_trodes import extract_dio_from_rec
-from utils.ts_sync import compute_ts_sync_parameters
+from utils.io_trodes import extract_dio_from_rec, get_csc_sg_ts
+from utils.ts_sync import compute_ts_sync_parameters, convert_sg_ts_to_ros_time, save_ts_sync_binary
 from utils.omni_anal_logger import omni_anal_logger
 
 
@@ -35,14 +35,14 @@ def setup_session_metadata(rat_id: str, session_name: str, overwrite: bool = Fal
 
     # Create and save SessionMetadata object
     session_metadata = SessionMetadata(rat_id, session_name)
-    session_metadata.load_or_initialize_pickle()
+    session_metadata.load_or_initialize_pickle(overwrite=overwrite)
     session_metadata.save_pickle(overwrite=overwrite)
     omni_anal_logger.info("SessionMetadata initialized and saved")
 
     # If session is an ephys recording, create and save EphysMetadata
     if session_metadata.session_type == "ephys":
         ephys_metadata = EphysMetadata(rat_id, session_name)
-        ephys_metadata.load_or_initialize_pickle()
+        ephys_metadata.load_or_initialize_pickle(overwrite=overwrite)
         ephys_metadata.save_pickle(overwrite=overwrite)
         omni_anal_logger.info("EphysMetadata initialized and saved")
     else:
@@ -76,7 +76,7 @@ def setup_dio_extraction(rat_id: str, session_name: str, overwrite: bool = False
     omni_anal_logger.info("DIO extraction complete.")
 
 
-def setup_timestamp_sync(rat_id: str, session_name: str, dio_channel: int = 2, overwrite: bool = False) -> None:
+def setup_timestamp_sync(rat_id: str, session_name: str, dio_channel: int = 2, overwrite: bool = False, save_ts_binary: bool = False) -> None:
     """
     Compute and save timestamp synchronization parameters between SpikeGadgets and ROS timebases.
 
@@ -85,15 +85,17 @@ def setup_timestamp_sync(rat_id: str, session_name: str, dio_channel: int = 2, o
         session_name (str): Session folder name
         dio_channel (int): DIO channel to use for sync pulse detection (default = 2)
         overwrite (bool): If True, overwrite existing timestamp_mapping in metadata
+        save_ts_binary (bool): If True, generate and save ROS-aligned timestamps for each CSC sample
 
     Returns:
         None
     """
+
     omni_anal_logger.info(f"--- Starting timestamp sync for session: {rat_id}/{session_name} ---")
 
     # Load session-level metadata and check session type
     session_metadata = SessionMetadata(rat_id, session_name)
-    session_metadata.load_or_initialize_pickle()
+    session_metadata.load_or_initialize_pickle(overwrite=False) # Do not overwrite existing metadata
 
     if session_metadata.session_type != "ephys":
         omni_anal_logger.info("Session type is not 'ephys' — skipping timestamp synchronization.")
@@ -101,7 +103,7 @@ def setup_timestamp_sync(rat_id: str, session_name: str, dio_channel: int = 2, o
 
     # Load EphysMetadata to check for existing sync and sampling rate
     ephys_metadata = EphysMetadata(rat_id, session_name)
-    ephys_metadata.load_or_initialize_pickle()
+    ephys_metadata.load_or_initialize_pickle(overwrite=False) # Do not overwrite existing metadata
 
     if ephys_metadata.timestamp_mapping is not None and not overwrite:
         omni_anal_logger.warning("Timestamp sync already computed — skipping (use overwrite=True to force).")
@@ -129,4 +131,12 @@ def setup_timestamp_sync(rat_id: str, session_name: str, dio_channel: int = 2, o
 
     omni_anal_logger.info("Timestamp sync parameters saved to EphysMetadata")
     omni_anal_logger.info(f"Sync polyfit: {sync_mapping['poly_coeffs']}, R² = {sync_mapping['r_squared']:.5f}")
+
+    # Optionally compute and save full synced CSC timestamp vector
+    if save_ts_binary:
+        sg_ts = get_csc_sg_ts(ephys_metadata.num_samples, ephys_metadata.sampling_rate_hz)
+        ros_ts = convert_sg_ts_to_ros_time(sg_ts, sync_mapping)
+        save_ts_sync_binary(ros_ts, rat_id, session_name, overwrite=overwrite)
+
     omni_anal_logger.info(f"--- Timestamp sync complete for session: {rat_id}/{session_name} ---")
+

@@ -67,6 +67,16 @@ def get_dio_dir(rat_id: str, session_name: str) -> Path:
     """
     return get_processed_dir(rat_id, session_name) / f"{session_name}.DIO"
 
+def get_csc_dir(rat_id: str, session_name: str) -> Path:
+    """
+    Parameters:
+        rat_id (str)
+        session_name (str)
+
+    Returns: 'data/NC40001/20250328_134136/processed/20250328_134136.CSC'
+    """
+    return get_processed_dir(rat_id, session_name) / f"{session_name}.CSC"
+
 def get_spike_dir(rat_id: str, session_name: str) -> Path:
     """
     Parameters:
@@ -76,6 +86,17 @@ def get_spike_dir(rat_id: str, session_name: str) -> Path:
     Returns: 'data/NC40001/20250328_134136/processed/20250328_134136.spikes'
     """
     return get_processed_dir(rat_id, session_name) / f"{session_name}.spikes"
+
+def get_synced_ts_dir(rat_id: str, session_name: str) -> Path:
+    """
+    Parameters:
+        rat_id (str)
+        session_name (str)
+
+    Returns: 'data/NC40001/20250328_134136/processed/20250328_134136.ts'
+    """
+    return get_processed_dir(rat_id, session_name) / f"{session_name}.ts"
+
 
 # ------------------------ #
 # Data Paths

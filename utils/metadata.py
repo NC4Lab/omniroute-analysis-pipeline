@@ -14,7 +14,7 @@ from typing import Any, Literal
 
 from utils.omni_anal_logger import omni_anal_logger
 from utils.versioning import get_version_info
-from utils.io_trodes import load_sample_rate_from_rec
+from utils.io_trodes import load_sample_rate_from_rec, load_num_samples_from_rec
 from utils.path import (
     get_rec_path,
     get_rat_dir,
@@ -23,11 +23,12 @@ from utils.path import (
     get_session_metadata_path,
     get_ephys_metadata_path,
     get_dio_dir,
+    get_csc_dir,
     get_spike_dir,
+    get_synced_ts_dir,
     get_experiment_metadata_csv_path,
     get_data_dir,
 )
-
 
 #------------------------------------------------------------------
 # Base class for all metadata types
@@ -47,15 +48,18 @@ class BaseMetadata:
         self.custom = SimpleNamespace()
         self.version_info: dict[str, str] = {}
 
-    def load_or_initialize_pickle(self) -> None:
+    def load_or_initialize_pickle(self, overwrite: bool = False) -> None:
         """
-        Load object from pickle if it exists; otherwise call post_initialize().
+        Load object from pickle if it exists, unless overwrite is True.
+        Otherwise, call post_initialize() to create from scratch.
         Also attaches version metadata (git hash and processing timestamp).
+
+        Parameters:
+            overwrite (bool): If True, force reinitialization even if a pickle exists.
         """
         pickle_path = self._get_pickle_path()
 
-        # Load from disk if pickle exists
-        if pickle_path.exists():
+        if pickle_path.exists() and not overwrite:
             with open(pickle_path, "rb") as f:
                 loaded = pickle.load(f)
             self.__dict__.update(loaded.__dict__)
@@ -66,12 +70,10 @@ class BaseMetadata:
             if not hasattr(self, "version_info") or self.version_info is None:
                 self.version_info = get_version_info()
 
-        # Initialize from scratch if no file exists
         else:
             self.custom = SimpleNamespace()
             self.version_info = get_version_info()
             self.post_initialize()
-
 
     def save_pickle(self, overwrite: bool = False) -> None:
         """
@@ -152,7 +154,9 @@ class SessionMetadata(BaseMetadata):
         self.rec_path: Path | None = None
         self.processed_dir: Path | None = None
         self.dio_dir: Path | None = None
+        self.csc_dir: Path | None = None
         self.spike_dir: Path | None = None
+        self.synced_ts_dir: Path | None = None
         self.session_type: Literal["ephys", "behaviour"] | None = None
 
     def post_initialize(self) -> None:
@@ -163,7 +167,9 @@ class SessionMetadata(BaseMetadata):
         self.rec_path = get_rec_path(self.rat_id, self.session_name)
         self.processed_dir = get_processed_dir(self.rat_id, self.session_name)
         self.dio_dir = get_dio_dir(self.rat_id, self.session_name)
+        self.csc_dir = get_csc_dir(self.rat_id, self.session_name)
         self.spike_dir = get_spike_dir(self.rat_id, self.session_name)
+        self.synced_ts_dir = get_synced_ts_dir(self.rat_id, self.session_name)
         self.session_type = "ephys" if self.rec_path.exists() else "behaviour"
 
         self.processed_dir.mkdir(parents=True, exist_ok=True)
@@ -193,8 +199,8 @@ class EphysMetadata(BaseMetadata):
         self.session_name = session_name
         self.channel_trodes_id: list[int] = []               # Logical Trodes channel IDs
         self.channel_headstage_hardware_id: list[int] = []   # Corresponding hardware channel IDs
-        self.channel_trodes_id_include: list[int] = []       # Active analysis mask
         self.sampling_rate_hz: float | None = None
+        self.num_samples: float | None = None
         self.timestamp_mapping: dict[str, Any] | None = None
 
     def post_initialize(self) -> None:
@@ -204,8 +210,14 @@ class EphysMetadata(BaseMetadata):
         rec_path = get_rec_path(self.rat_id, self.session_name)
         channel_map_path = get_ephys_channel_map_csv_path(self.rat_id)
 
+        # Load and store sampling rate and number of samples from the .rec file
         self.sampling_rate_hz = load_sample_rate_from_rec(rec_path)
+        self.num_samples = load_num_samples_from_rec(rec_path)
+        omni_anal_logger.info(f"Stored num_samples: {self.num_samples}, sampling_rate_hz: {self.sampling_rate_hz}")
+        
+        # Load and store the channel mapping
         self._load_channel_map(channel_map_path)
+        omni_anal_logger.info(f"Stored channel map data")
 
     def _load_channel_map(self, channel_map_path: Path) -> None:
         """
@@ -222,26 +234,6 @@ class EphysMetadata(BaseMetadata):
 
         self.channel_trodes_id = filtered["trodes_id"].tolist()
         self.channel_headstage_hardware_id = filtered["headstage_hardware_id"].tolist()
-        self.channel_trodes_id_include = self.channel_trodes_id.copy()
-
-    def trodes_to_headstage_ids(self, ids: list[int]) -> list[str]:
-        """
-        Convert Trodes IDs to hardware channel ID strings.
-
-        Parameters:
-            ids (list[int]): Trodes channel IDs to convert
-
-        Returns:
-            list[str]: Corresponding hardware IDs as strings
-
-        Raises:
-            ValueError: If any ID is not found in the map
-        """
-        mapping = {tid: str(hid) for tid, hid in zip(self.channel_trodes_id, self.channel_headstage_hardware_id)}
-        try:
-            return [mapping[tid] for tid in ids]
-        except KeyError as e:
-            raise ValueError(f"Invalid trodes_id: {e.args[0]} not found in known mapping.")
 
     def _get_pickle_path(self) -> Path:
         return get_ephys_metadata_path(self.rat_id, self.session_name)

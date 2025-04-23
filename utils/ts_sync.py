@@ -142,7 +142,6 @@ def _validate_sync_alignment(
             f"Sync validation failed: high-state DIO hit fraction = {high_hit_fraction:.3f} (must be > 0.9)"
         )
 
-
 def convert_sg_ts_to_ros_time(
     sg_ts: np.ndarray,
     sync_mapping: dict[str, any]
@@ -279,3 +278,52 @@ def align_timestamps_nw(x, y, new, match=1, mismatch=1, gap=1, thresh=0.1):
 
     return p, x_match, y_match
 
+def save_ts_sync_binary(ros_ts_array: np.ndarray, rat_id: str, session_name: str, overwrite: bool = False) -> None:
+    """
+    Save ROS-aligned timestamps for each SpikeGadgets samples to the session's synced timestamp directory.
+
+    Parameters:
+        ros_ts_array (np.ndarray): 1D array of ROS timestamps (one per CSC sample).
+        rat_id (str): Unique animal ID (e.g., "NC40001").
+        session_name (str): Session folder name (e.g., "20250328_134136").
+        overwrite (bool): If False and file exists, skip saving.
+    """
+    from utils.versioning import save_version_info
+    from utils.path import get_synced_ts_dir
+
+    ts_dir = get_synced_ts_dir(rat_id, session_name)
+    ts_path = ts_dir / "ros_times_from_csc.dat"
+
+    if ts_path.exists() and not overwrite:
+        omni_anal_logger.warning(f"ROS timestamp .dat file already exists at {ts_path} — skipping save.")
+        return
+
+    ts_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save timestamp array as NumPy binary (with .dat suffix)
+    with omni_anal_logger.time_block("Saving CSC-aligned ROS timestamps to .dat"):
+        np.save(ts_path, ros_ts_array)
+
+    # Save version info
+    save_version_info(ts_dir)
+    omni_anal_logger.info(f"Saved ROS-aligned timestamps to: {ts_path}")
+
+def load_ts_sync_binary(ts_dir: Path) -> np.ndarray:
+    """
+    Load ROS-aligned CSC timestamp vector from a binary .dat file.
+
+    Parameters:
+        ts_dir (Path): Directory containing the timestamp file (e.g., processed/<session>.ts/)
+
+    Returns:
+        np.ndarray: 1D array of ROS timestamps (one per CSC sample).
+
+    Raises:
+        FileNotFoundError: If the expected .dat file is not found in the directory.
+    """
+    ts_path = ts_dir / "ros_times_from_csc.dat"
+    if not ts_path.exists():
+        raise FileNotFoundError(f"Timestamp binary not found at: {ts_path}")
+
+    with omni_anal_logger.time_block("Loading synced ROS timestamps from binary"):
+        return np.load(ts_path)

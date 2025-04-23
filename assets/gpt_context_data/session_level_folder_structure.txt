@@ -12,19 +12,24 @@ experiment_x/                                               # Top-level project 
     │   └── processed/                                      # Preprocessed and derived data for this session
     │       ├── session_metadata.pkl                        # Serialized metadata object for the session-related data
     │       ├── ephys_metadata.pkl                          # Serialized metadata object for the elecrophysiology-related data
-    │
+    │       │
     │       ├── 20250328_134136.DIO/                        # Digital input event channels (e.g., sync)
     │       │   ├── 20250328_134136.dio_Controller_Din1.dat
     │       │   ├── 20250328_134136.dio_Controller_Din2.dat
     │       │   ├── version_info.pkl                        # Version info from when these were made (git hash and processing date)
     │       │   └── ...
-    │
+    │       │
     │       ├── 20250328_134136.spikes/                     # Sorted spike data (per unit or cluster)
     │       │   ├── 20250328_134136.spikes_unit1.dat
     │       │   ├── 20250328_134136.spikes_unit2.dat
     │       │   ├── version_info.pkl                        # Version info from when these were made (git hash and processing date)
     │       │   └── ...
-    │
+    │       │
+    │       ├── 20250328_134136.CSC/                        # CSC data (per channel)
+    │       │   ├── 20250328_134136.csc_chan1.dat
+    │       │   ├── 20250328_134136.csc_chan2.dat
+    │       │   ├── version_info.pkl                        # Version info from when these were made (git hash and processing date)
+    │       │   └── ...
     │       └── ...                                         # Additional derived arrays, timestamps, sync files
     │
     └── ...                                                 # Other session folders for this rat

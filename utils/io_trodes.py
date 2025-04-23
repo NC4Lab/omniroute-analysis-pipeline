@@ -11,13 +11,13 @@ import numpy as np
 import subprocess
 from typing import Union
 import spikeinterface.extractors as se
-from spikeinterface import BaseRecording
+from spikeinterface import BaseRecording, NumpyRecording
+from typing import Optional
 
 from utils.omni_anal_logger import omni_anal_logger
 from utils.versioning import save_version_info
 from utils.binary_utils import TrodesDIOBinaryLoader
 from utils.path import get_trodes_dir
-
 
 def load_sample_rate_from_rec(rec_path: Path) -> None:
     """
@@ -29,27 +29,80 @@ def load_sample_rate_from_rec(rec_path: Path) -> None:
     rec = se.read_spikegadgets(rec_path)
     return rec.get_sampling_frequency()
 
-
-def load_csc_from_rec(rec_path: Path, trodes_id_include: list[int]) -> None:
+def load_num_samples_from_rec(rec_path: Path) -> int:
     """
-    Load CSC data from a .rec file and store it in the EphysMetadata object.
+    Load total number of samples from the .rec file using SpikeInterface.
 
     Parameters:
         rec_path (Path): Path to the .rec file.
-        trodes_id_include (list[int]): List of Trodes channel IDs to include.
 
     Returns:
-        BaseRecording: SpikeInterface recording object with selected channels, ready for downstream processing.
-
+        int: Number of total samples in the recording.
     """
-    with omni_anal_logger.time_block("Loading CSC data from .rec file"):
-        rec = se.read_spikegadgets(rec_path)
-        return rec.channel_slice(channel_ids=trodes_id_include)
+    rec = se.read_spikegadgets(rec_path)
+    return rec.get_num_samples()
 
+def get_dio_sg_ts(dio_df: np.ndarray, sampling_rate_hz: float) -> np.ndarray:
+    """
+    Compute SpikeGadgets timebase timestamps for each entry in the DIO trace.
+
+    Parameters:
+        dio_df (np.ndarray): DIO DataFrame with index as sample numbers (from load_dio_binary(...).dio).
+        sampling_rate_hz (float): Sampling rate of the Trodes system in Hz.
+
+    Returns:
+        np.ndarray: Array of timestamps in SpikeGadgets timebase (in seconds).
+    """
+    return dio_df.index.to_numpy() / sampling_rate_hz
+
+
+def get_csc_sg_ts(n_samples: int, sampling_rate_hz: float) -> np.ndarray:
+    """
+    Compute SpikeGadgets timebase timestamps for each sample in CSC data.
+
+    Parameters:
+        n_samples (int): Number of CSC samples.
+        sampling_rate_hz (float): Sampling rate of the CSC recording in Hz.
+
+    Returns:
+        np.ndarray: Array of timestamps in SpikeGadgets timebase (in seconds).
+    """
+    return np.arange(n_samples) / sampling_rate_hz
+
+def load_dio_binary(dio_dir: Path, channel: int) -> np.ndarray:
+    """
+    Load a binary DIO trace from a specific channel using TrodesDIOBinaryLoader.
+
+    Parameters:
+        dio_dir (Path): Path to the extracted DIO directory.
+        channel (int): Channel number to load (e.g., 1 for Din1).
+
+    Returns:
+        np.ndarray: 1D array of 0/1 values.
+    """
+    # Look for a file ending in Din{channel}.dat
+    pattern = f"Din{channel}.dat"
+
+    matched_file = None
+    for file in dio_dir.iterdir():
+        if file.name.endswith(pattern):
+            matched_file = file
+            break
+
+    if matched_file is None:
+        raise FileNotFoundError(f"No Din{channel}.dat file found in {dio_dir}")
+
+    # Load the .dat file and log the time taken
+    with omni_anal_logger.time_block(f"Loading DIO channel {channel}"):
+        return TrodesDIOBinaryLoader(matched_file)
 
 def extract_dio_from_rec(rec_path: Path, dio_dir: Path, overwrite: bool = False) -> None:
     """
     Extract DIO channels from a .rec file using the SpikeGadgets exportdio tool.
+    Saves them using SpikeGadgets .dat format.
+
+    Each file is auto named by SpikeGadgets, which I fucking hate!
+    (e.g., 20250328_134136.dio_Controller_Din1.dat).
 
     Parameters:
         rec_path (Path): Path to the .rec file.
@@ -94,57 +147,150 @@ def extract_dio_from_rec(rec_path: Path, dio_dir: Path, overwrite: bool = False)
     # Save version metadata alongside the extracted DIO files
     save_version_info(dio_dir)
 
-
-def load_dio_binary(dio_dir: Path, channel: int) -> np.ndarray:
+def load_csc_from_rec(
+    rec_path: Path,
+    channel_trodes_id: list[int],
+    channel_headstage_hardware_id: list[int],
+    trodes_id_include: Optional[list[int]] = None
+) -> BaseRecording:
     """
-    Load a binary DIO trace from a specific channel using TrodesDIOBinaryLoader.
+    Load CSC data from a .rec file using SpikeInterface, map channel IDs to Trodes IDs,
+    and optionally filter by a provided list of Trodes IDs.
 
     Parameters:
-        dio_dir (Path): Path to the extracted DIO directory.
-        channel (int): Channel number to load (e.g., 1 for Din1).
+        rec_path (Path): Path to the .rec file.
+        channel_trodes_id (list[int]): List of Trodes IDs (logical labels from CSV).
+        channel_headstage_hardware_id (list[int]): Corresponding hardware IDs for slicing.
+        trodes_id_include (Optional[list[int]]): Subset of Trodes IDs to include (if provided).
 
     Returns:
-        np.ndarray: 1D array of 0/1 values.
+        BaseRecording: A SpikeInterface recording with channel_ids set to Trodes IDs and optional filtering applied.
     """
-    # Look for a file ending in Din{channel}.dat
-    pattern = f"Din{channel}.dat"
+    # Check for consistent mapping length
+    if len(channel_trodes_id) != len(channel_headstage_hardware_id):
+        raise ValueError("channel_trodes_id and channel_headstage_hardware_id must be the same length.")
 
-    matched_file = None
-    for file in dio_dir.iterdir():
-        if file.name.endswith(pattern):
-            matched_file = file
-            break
+    # Load full recording (initial channel_ids are hardware IDs)
+    recording = se.read_spikegadgets(rec_path)
 
-    if matched_file is None:
-        raise FileNotFoundError(f"No Din{channel}.dat file found in {dio_dir}")
+    # Slice only to known mapped hardware channels
+    recording = recording.channel_slice(channel_ids=channel_headstage_hardware_id)
 
-    with omni_anal_logger.time_block(f"Loading DIO channel {channel}"):
-        return TrodesDIOBinaryLoader(matched_file)
+    # Update internal SI channel_ids to use Trodes IDs
+    recording.set_channel_ids(channel_trodes_id)
 
+    # Store hardware IDs as a channel property for traceability
+    recording.set_property("hardware_id", channel_headstage_hardware_id)
 
-def get_dio_sg_ts(dio_df: np.ndarray, sampling_rate_hz: float) -> np.ndarray:
+    # If a subset of Trodes IDs is requested, apply additional filtering
+    if trodes_id_include is not None:
+        # Validate that all requested IDs exist
+        missing = set(trodes_id_include) - set(channel_trodes_id)
+        if missing:
+            raise ValueError(f"Requested Trodes IDs not in known map: {missing}")
+
+        recording = recording.channel_slice(channel_ids=trodes_id_include)
+
+    # The recording now uses Trodes IDs as channel_ids, and hardware IDs are preserved as a property
+    return recording
+
+def save_csc_binary(csc_dir: Path, recording: BaseRecording, overwrite: bool = False) -> None:
     """
-    Compute SpikeGadgets timebase timestamps for each entry in the DIO trace.
+    Save CSC trace data from a BaseRecording as separate raw .dat files
+    (one per channel) in the specified CSC directory.
+
+    Each file is named using the session base name + .csc_chan{N}.dat
+    (e.g., 20250328_134136.csc_chan1.dat).
 
     Parameters:
-        dio_df (np.ndarray): DIO DataFrame with index as sample numbers (from load_dio_binary(...).dio).
-        sampling_rate_hz (float): Sampling rate of the Trodes system in Hz.
-
-    Returns:
-        np.ndarray: Array of timestamps in SpikeGadgets timebase (in seconds).
+        csc_dir (Path): Output directory (should end with .CSC).
+        recording (BaseRecording): The pre-sliced recording object with channel_ids set to Trodes IDs.
+        overwrite (bool): If False and file exists, skip saving that channel.
     """
-    return dio_df.index.to_numpy() / sampling_rate_hz
+    if not csc_dir.name.endswith(".CSC"):
+        raise ValueError(f"CSC directory must end in .CSC, got: {csc_dir.name}")
+
+    # Derive session base name from folder name (strip ".CSC")
+    session_base_name = csc_dir.name.replace(".CSC", "")
+
+    # Ensure output directory exists
+    csc_dir.mkdir(parents=True, exist_ok=True)
+
+    with omni_anal_logger.time_block("Saving CSC traces to individual .dat files"):
+        traces = recording.get_traces()  # shape: (n_samples, n_channels)
+        channel_ids = recording.get_channel_ids()
+
+        for i, chan_id in enumerate(channel_ids):
+            file_name = f"{session_base_name}.csc_chan{i+1}.dat"  # 1-based index
+            file_path = csc_dir / file_name
+
+            if file_path.exists() and not overwrite:
+                omni_anal_logger.warning(f"File already exists at {file_path} — skipping.")
+                continue
+
+            traces[:, i].astype(np.float32).tofile(file_path)
+            omni_anal_logger.info(f"Saved CSC channel {chan_id} to: {file_path}")
+
+    # Save processing version info
+    save_version_info(csc_dir)
+    omni_anal_logger.info(f"Saved CSC version info to: {csc_dir}")
 
 
-def get_csc_sg_ts(n_samples: int, sampling_rate_hz: float) -> np.ndarray:
+    # Save metadata for version tracking
+    save_version_info(csc_dir)
+    omni_anal_logger.info(f"Saved CSC version info to: {csc_dir}")
+
+def load_csc_binary(
+    csc_dir: Path,
+    channel_trodes_id: list[int],
+    sampling_rate_hz: float,
+    trodes_id_include: Optional[list[int]] = None
+) -> BaseRecording:
     """
-    Compute SpikeGadgets timebase timestamps for each sample in CSC data.
+    Load CSC traces from individual .dat files in a CSC directory and return as a BaseRecording.
 
     Parameters:
-        n_samples (int): Number of CSC samples.
-        sampling_rate_hz (float): Sampling rate of the CSC recording in Hz.
+        csc_dir (Path): Directory containing per-channel .dat files.
+        channel_trodes_id (list[int]): Trodes IDs corresponding to the channels in order.
+        sampling_rate_hz (float): Sampling rate to embed in the BaseRecording.
+        trodes_id_include (Optional[list[int]]): If provided, filters the channels to include only these Trodes IDs.
 
     Returns:
-        np.ndarray: Array of timestamps in SpikeGadgets timebase (in seconds).
+        NumpyRecording: A SpikeInterface BaseRecording object with channel_ids set to Trodes IDs.
     """
-    return np.arange(n_samples) / sampling_rate_hz
+    if not csc_dir.exists() or not csc_dir.is_dir():
+        raise FileNotFoundError(f"CSC directory not found: {csc_dir}")
+
+    # Filter channels if inclusion list is provided
+    if trodes_id_include is not None:
+        id_mask = [tid in trodes_id_include for tid in channel_trodes_id]
+        selected_ids = [tid for tid, keep in zip(channel_trodes_id, id_mask) if keep]
+        file_indices = [i for i, keep in enumerate(id_mask) if keep]
+    else:
+        selected_ids = channel_trodes_id
+        file_indices = list(range(len(channel_trodes_id)))
+
+    # Load traces from each selected channel
+    traces_list = []
+    session_base = csc_dir.name.replace(".CSC", "")
+
+    for i in file_indices:
+        chan_idx = i + 1  # 1-based file naming convention
+        file_path = csc_dir / f"{session_base}.csc_chan{chan_idx}.dat"
+
+        if not file_path.exists():
+            raise FileNotFoundError(f"Missing CSC channel file: {file_path}")
+
+        trace = np.fromfile(file_path, dtype=np.float32)
+        traces_list.append(trace)
+
+    # Stack traces into shape (n_samples, n_channels)
+    traces_array = np.stack(traces_list, axis=1)
+
+    # Create and return BaseRecording
+    recording = NumpyRecording(
+        traces_list=[traces_array],
+        sampling_frequency=sampling_rate_hz,
+        channel_ids=selected_ids
+    )
+    return recording

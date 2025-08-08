@@ -1,5 +1,8 @@
 """
 Test: Timestamp sync computation and visual validation.
+
+Run script:
+    python -m testing.test_4_ts_sync
 """
 
 import sys

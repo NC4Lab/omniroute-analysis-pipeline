@@ -13,8 +13,10 @@ omniroute_analysis/
 │   └── example_experiment/             # A single experiment or manuscript workspace (this one will be used as an example for others)
 │       ├── experiment_metadata.csv     # CSV file for batch proccsing with (rat_id, session_name, inlucde) used by ExperimentMetadata class
 │       ├── scripts/
-│       │   └── preprocess_batch.py     # Script to batch process sessions
-│       │   └── preprocess_session.py   # (Planned) Script to process single session
+│       │   └── preprocess_session.py     # Script to preprocess sessions
+│       │   └── preprocess_batch.py     # Script to batch preprocess sessions
+│       │   └── analysis_csc.py         # Script for CSC analysis
+│       │   └── export_csc_to_matlab.py # Script for exporting CSC to MATLAB
 │       └── notebooks/
 │           └── analysis_1.ipynb        # (Planned) Notebook for high level analyss
 └── utils/

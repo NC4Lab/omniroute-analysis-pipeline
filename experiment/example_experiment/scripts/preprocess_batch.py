@@ -3,7 +3,9 @@ Script: preprocessing.py
 
 Purpose:
     Initialize and load experiment-level metadata for batch session preprocessing.
-    Eventually will dispatch session-level processing via preprocess_session_start.py.
+
+Run script:
+    python -m experiment.example_experiment.scripts.preprocess_batch
 """
 
 from utils.metadata import ExperimentMetadata

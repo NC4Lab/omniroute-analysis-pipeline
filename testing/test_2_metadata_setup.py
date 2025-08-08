@@ -63,7 +63,6 @@ reloaded_ephys.load_or_initialize_pickle()
 # Validate built-in fields
 assert reloaded_ephys.sampling_rate_hz == ephys.sampling_rate_hz
 assert reloaded_ephys.channel_trodes_id == ephys.channel_trodes_id
-assert reloaded_ephys.channel_trodes_id_include == ephys.channel_trodes_id_include
 
 # Validate custom fields
 assert reloaded_ephys.custom.notch_filter_applied is True

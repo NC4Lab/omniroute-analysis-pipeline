@@ -4,6 +4,13 @@ Script: export_csc_to_matlab.py
 Purpose:
     Export CSC traces and aligned timestamps to a MATLAB .mat file
     for downstream analysis in MATLAB. Hardcoded for a specific session.
+
+Prerequisite:
+    This script assumes you have already run:
+        python -m experiment.example_experiment.scripts.preprocess_batch
+
+Run script:
+    python -m experiment.example_experiment.scripts.export_csc_to_matlab
 """
 
 from pathlib import Path
@@ -13,15 +20,15 @@ from utils.metadata import SessionMetadata, EphysMetadata
 from utils.io_trodes import load_csc_from_rec, get_csc_sg_ts
 from utils.ts_sync import convert_sg_ts_to_ros_time
 from utils.omni_anal_logger import omni_anal_logger
+from utils.path import get_data_dir
 
 # ----------------------------
 # Hardcoded session + export path
 # ----------------------------
-rat_id = "NC40008"
-session_name = "20250328_134136"
-export_dir = Path(
-    r"C:\Users\lester\UBC\Madhav, Manu - lesterkaur2024gate\analysis\gate_ephys_test\data\NC40008\20250328_134136\processed\matlab_csc"
-)
+rat_id = "NC40023"
+#session_name = "20250806_164955"
+session_name = "20250806_170156"
+export_dir = get_data_dir() / rat_id / session_name / "processed" / "matlab_csc"
 overwrite = True
 
 # ----------------------------
@@ -87,6 +94,7 @@ mat_data = {
 # ----------------------------
 # Save to .mat file
 # ----------------------------
+
 export_dir.mkdir(parents=True, exist_ok=True)
 export_path = export_dir / f"{session_name}_csc_export.mat"
 
